@@ -1,0 +1,55 @@
+*{
+	box-sizing:border-box;
+	-webkit-tap-highlight-color:transparent;
+	font-family: arial;
+}
+
+::-webkit-scrollbar { 
+    display: none; 
+}
+
+html, body{
+	margin:0;
+	padding:0;
+	width: 100%;
+	height: 100%;
+}
+
+#main{
+	display: block;
+	width:100%;
+	height: 100%;
+	position: absolute;
+	top: 0;
+	left: 0;
+	background-color: #000000;
+	z-index: 0;
+	overflow: hidden;
+}
+
+.canvas{
+	position: absolute;
+	top:0;
+	left:0;
+	z-index: 99;
+	opacity:1;
+	-webkit-transition: opacity ease-out 0.5s;
+	transition: opacity ease-out 0.5s;
+}
+.canvas.hide{
+	opacity:0;
+}
+
+.test-item{
+	display:block;
+	width:270px;
+	height:270px;
+	border: 2px solid #ffffff;
+	border-radius: 600px;
+	background-image:url('../img/water.jpg');
+	-webkit-background-size:cover;
+	background-size:cover;
+	position:absolute;
+	top:0;bottom:0;left:0;right:0;
+	margin:auto;
+}
