@@ -6,8 +6,6 @@ export default {
         attribute highp vec3 aVertexPosition;
 
         uniform highp mat4 uNormalMatrix;
-        uniform highp mat4 uMVMatrix;
-        uniform highp mat4 uPMatrix;
 
         varying highp vec2 vTextureCoord;
         varying highp vec3 vLighting;

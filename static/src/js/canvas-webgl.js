@@ -24,18 +24,6 @@ class CanvasWebgl{
 	clearScreen(){
 		this.ctx.clearColor(0.0, 0.0, 0.0, 0.0);
 	}
-	getFPS(){
-		if (this.frameInfo.elapsed !== 0)
-		{
-			var fpsFilter = 50;
-			var frameFPS = 1000 / this.frameInfo.elapsed;
-			this.frameInfo.fpsRate += (frameFPS - this.frameInfo.fpsRate) / fpsFilter;
-		}
-		return this.frameInfo.fpsRate;
-	}
-	destruct(){
-		this.active = false;
-	}
 	getShader(gl, shaderObj) {
 		var shader;		
 		if (shaderObj.type == "x-shader/x-fragment")
@@ -116,12 +104,6 @@ class CanvasWebgl{
 				this.ctx.uniform1f(this.shaderProgram.wave[key].time, item.time);
 				this.ctx.uniform3fv(this.shaderProgram.wave[key].shockParams, item.shockParams);
 			});
-		}
-		else
-		{
-			this.ctx.disableVertexAttribArray(this.shaderProgram.textureCoordAttribute);
-			this.ctx.uniform1i(this.shaderProgram.hasTexure, false);
-			this.ctx.uniform4fv(this.shaderProgram.modelColor, color);
 		}
 		this.ctx.bindBuffer(this.ctx.ELEMENT_ARRAY_BUFFER, mesh.indexBuffer);
 		this.ctx.drawElements(this.ctx.TRIANGLES, mesh.indexBuffer.numItems, this.ctx.UNSIGNED_SHORT, 0);

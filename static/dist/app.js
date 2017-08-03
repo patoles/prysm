@@ -211,8 +211,6 @@ var vcShader = _interopRequire(__webpack_require__(5));
 
 var CanvasShader = (function (_CanvasWebgl) {
 	function CanvasShader(params) {
-		var _this = this;
-
 		_classCallCheck(this, CanvasShader);
 
 		_get(Object.getPrototypeOf(CanvasShader.prototype), "constructor", this).call(this, params);
@@ -220,15 +218,9 @@ var CanvasShader = (function (_CanvasWebgl) {
 		vcShader.setParams && vcShader.setParams(this, params);
 		this.initClick(this.canvas);
 		this.initShaders(fgShader, vcShader);
-		this.meshes = {};
-		this.meshList = [{ name: "plan", texture: params.texture }];
-		var meshObj = { plan: { vertices: [-1, -1, 0, 1, -1, 0, 1, 1, 0, -1, 1, 0], vertexNormals: [0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1], textures: [0, 0, 0, 1, 0, 0, 1, 1], indices: [0, 1, 2, 0, 2, 3] } };
-		this.meshList.forEach(function (item, key) {
-			_this.meshes[item.name] = [];
-			for (var mesh in meshObj[item.name]) _this.meshes[item.name][mesh] = meshObj[item.name][mesh];
-			GlUtils.initMeshBuffers(_this.ctx, _this.meshes[item.name]);
-			if (_this.meshes[item.name].textures.length && item.texture !== "") _this.initTexture(_this.meshes[item.name], item.texture);
-		});
+		this.meshes = { plan: { vertices: [-1, -1, 0, 1, -1, 0, 1, 1, 0, -1, 1, 0], vertexNormals: [0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1], textures: [0, 0, 0, 1, 0, 0, 1, 1], indices: [0, 1, 2, 0, 2, 3] } };
+		GlUtils.initMeshBuffers(this.ctx, this.meshes.plan);
+		this.initTexture(this.meshes.plan, params.texture);
 	}
 
 	_inherits(CanvasShader, _CanvasWebgl);
@@ -243,12 +235,8 @@ var CanvasShader = (function (_CanvasWebgl) {
 		},
 		draw: {
 			value: function draw() {
-				var _this = this;
-
 				this.ctx.clear(this.ctx.COLOR_BUFFER_BIT | this.ctx.DEPTH_BUFFER_BIT);
-				this.meshList.forEach(function (item, key) {
-					_this.drawObject(_this.meshes[item.name], [1, 1, 1, 1]);
-				});
+				this.drawObject(this.meshes.plan, [1, 1, 1, 1]);
 				this.transform();
 			}
 		},
@@ -328,21 +316,6 @@ var CanvasWebgl = (function () {
 		clearScreen: {
 			value: function clearScreen() {
 				this.ctx.clearColor(0, 0, 0, 0);
-			}
-		},
-		getFPS: {
-			value: function getFPS() {
-				if (this.frameInfo.elapsed !== 0) {
-					var fpsFilter = 50;
-					var frameFPS = 1000 / this.frameInfo.elapsed;
-					this.frameInfo.fpsRate += (frameFPS - this.frameInfo.fpsRate) / fpsFilter;
-				}
-				return this.frameInfo.fpsRate;
-			}
-		},
-		destruct: {
-			value: function destruct() {
-				this.active = false;
 			}
 		},
 		getShader: {
@@ -432,10 +405,6 @@ var CanvasWebgl = (function () {
 						_this.ctx.uniform1f(_this.shaderProgram.wave[key].time, item.time);
 						_this.ctx.uniform3fv(_this.shaderProgram.wave[key].shockParams, item.shockParams);
 					});
-				} else {
-					this.ctx.disableVertexAttribArray(this.shaderProgram.textureCoordAttribute);
-					this.ctx.uniform1i(this.shaderProgram.hasTexure, false);
-					this.ctx.uniform4fv(this.shaderProgram.modelColor, color);
 				}
 				this.ctx.bindBuffer(this.ctx.ELEMENT_ARRAY_BUFFER, mesh.indexBuffer);
 				this.ctx.drawElements(this.ctx.TRIANGLES, mesh.indexBuffer.numItems, this.ctx.UNSIGNED_SHORT, 0);
@@ -531,7 +500,7 @@ module.exports = {
 
 module.exports = {
     type: "x-shader/x-vertex",
-    source: "\n        precision mediump float;\n        attribute highp vec3 aVertexNormal;\n        attribute highp vec3 aVertexPosition;\n\n        uniform highp mat4 uNormalMatrix;\n        uniform highp mat4 uMVMatrix;\n        uniform highp mat4 uPMatrix;\n\n        varying highp vec2 vTextureCoord;\n        varying highp vec3 vLighting;\n\n        const vec2 madd=vec2(0.5, 0.5);\n        attribute vec2 vertexIn;\n\n\n        void main(void){\n            gl_Position = vec4(aVertexPosition.xy, 0.0, 1.0);\n            vTextureCoord = aVertexPosition.xy*madd+madd;\n\n            highp vec3 ambientLight = vec3(0.6, 0.6, 0.6);\n            highp vec3 directionalLightColor = vec3(0.5, 0.5, 0.75);\n            highp vec3 directionalVector = vec3(0.85, 0.8, -0.40);\n\n            highp vec4 transformedNormal = uNormalMatrix * vec4(aVertexNormal, 1.0);\n\n            highp float directional = max(dot(transformedNormal.xyz, directionalVector), 0.0);\n            vLighting = ambientLight + (directionalLightColor * directional);\n        }\n    "
+    source: "\n        precision mediump float;\n        attribute highp vec3 aVertexNormal;\n        attribute highp vec3 aVertexPosition;\n\n        uniform highp mat4 uNormalMatrix;\n\n        varying highp vec2 vTextureCoord;\n        varying highp vec3 vLighting;\n\n        const vec2 madd=vec2(0.5, 0.5);\n        attribute vec2 vertexIn;\n\n\n        void main(void){\n            gl_Position = vec4(aVertexPosition.xy, 0.0, 1.0);\n            vTextureCoord = aVertexPosition.xy*madd+madd;\n\n            highp vec3 ambientLight = vec3(0.6, 0.6, 0.6);\n            highp vec3 directionalLightColor = vec3(0.5, 0.5, 0.75);\n            highp vec3 directionalVector = vec3(0.85, 0.8, -0.40);\n\n            highp vec4 transformedNormal = uNormalMatrix * vec4(aVertexNormal, 1.0);\n\n            highp float directional = max(dot(transformedNormal.xyz, directionalVector), 0.0);\n            vLighting = ambientLight + (directionalLightColor * directional);\n        }\n    "
 };
 
 /***/ }),

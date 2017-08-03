@@ -10,17 +10,9 @@ class CanvasShader extends CanvasWebgl{
 		vcShader.setParams && vcShader.setParams(this, params);
 		this.initClick(this.canvas);
 		this.initShaders(fgShader, vcShader);
-		this.meshes = {};
-		this.meshList = [{name:'plan', texture:params.texture}];
-		var meshObj = {"plan":{"vertices":[-1,-1,0,1,-1,0,1,1,0,-1,1,0],"vertexNormals":[0,0,1,0,0,1,0,0,1,0,0,1],"textures":[0,0,0,1,0,0,1,1],"indices":[0,1,2,0,2,3]}};
-		this.meshList.forEach((item, key) => {
-			this.meshes[item.name] = [];
-			for (var mesh in meshObj[item.name])
-				this.meshes[item.name][mesh] = meshObj[item.name][mesh];
-			GlUtils.initMeshBuffers(this.ctx, this.meshes[item.name]);
-			if (this.meshes[item.name].textures.length && item.texture !== '')
-				this.initTexture(this.meshes[item.name], item.texture);
-		});
+		this.meshes = {"plan":{"vertices":[-1,-1,0,1,-1,0,1,1,0,-1,1,0],"vertexNormals":[0,0,1,0,0,1,0,0,1,0,0,1],"textures":[0,0,0,1,0,0,1,1],"indices":[0,1,2,0,2,3]}};
+		GlUtils.initMeshBuffers(this.ctx, this.meshes.plan);
+		this.initTexture(this.meshes.plan, params.texture);
 	}
 	initShaders(fs, vs){
 		super.initShaders(fs, vs);
@@ -29,9 +21,7 @@ class CanvasShader extends CanvasWebgl{
 	}
 	draw(){
 		this.ctx.clear(this.ctx.COLOR_BUFFER_BIT | this.ctx.DEPTH_BUFFER_BIT);
-		this.meshList.forEach((item, key) => {
-			this.drawObject(this.meshes[item.name], [1.0, 1.0, 1.0, 1.0]);
-		});
+		this.drawObject(this.meshes.plan, [1.0, 1.0, 1.0, 1.0]);
 		this.transform();
 	}
 	transform(){
