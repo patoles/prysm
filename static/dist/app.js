@@ -195,6 +195,105 @@ var _interopRequire = function (obj) { return obj && obj.__esModule ? obj["defau
 
 var _createClass = (function () { function defineProperties(target, props) { for (var key in props) { var prop = props[key]; prop.configurable = true; if (prop.value) prop.writable = true; } Object.defineProperties(target, props); } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
 
+var _get = function get(object, property, receiver) { var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc && desc.writable) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
+
+var _inherits = function (subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) subClass.__proto__ = superClass; };
+
+var _classCallCheck = function (instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } };
+
+var CanvasWebgl = _interopRequire(__webpack_require__(3));
+
+var GlUtils = _interopRequire(__webpack_require__(0));
+
+var fgShader = _interopRequire(__webpack_require__(4));
+
+var vcShader = _interopRequire(__webpack_require__(5));
+
+var CanvasShader = (function (_CanvasWebgl) {
+	function CanvasShader(params) {
+		var _this = this;
+
+		_classCallCheck(this, CanvasShader);
+
+		_get(Object.getPrototypeOf(CanvasShader.prototype), "constructor", this).call(this, params);
+		fgShader.setParams && fgShader.setParams(this, params);
+		vcShader.setParams && vcShader.setParams(this, params);
+		this.initClick(this.canvas);
+		this.initShaders(fgShader, vcShader);
+		this.meshes = {};
+		this.meshList = [{ name: "plan", texture: params.texture }];
+		var meshObj = { plan: { vertices: [-1, -1, 0, 1, -1, 0, 1, 1, 0, -1, 1, 0], vertexNormals: [0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1], textures: [0, 0, 0, 1, 0, 0, 1, 1], indices: [0, 1, 2, 0, 2, 3] } };
+		this.meshList.forEach(function (item, key) {
+			_this.meshes[item.name] = [];
+			for (var mesh in meshObj[item.name]) _this.meshes[item.name][mesh] = meshObj[item.name][mesh];
+			GlUtils.initMeshBuffers(_this.ctx, _this.meshes[item.name]);
+			if (_this.meshes[item.name].textures.length && item.texture !== "") _this.initTexture(_this.meshes[item.name], item.texture);
+		});
+	}
+
+	_inherits(CanvasShader, _CanvasWebgl);
+
+	_createClass(CanvasShader, {
+		initShaders: {
+			value: function initShaders(fs, vs) {
+				_get(Object.getPrototypeOf(CanvasShader.prototype), "initShaders", this).call(this, fs, vs);
+				fs.init && fs.init(this);
+				vs.init && vs.init(this);
+			}
+		},
+		draw: {
+			value: function draw() {
+				var _this = this;
+
+				this.ctx.clear(this.ctx.COLOR_BUFFER_BIT | this.ctx.DEPTH_BUFFER_BIT);
+				this.meshList.forEach(function (item, key) {
+					_this.drawObject(_this.meshes[item.name], [1, 1, 1, 1]);
+				});
+				this.transform();
+			}
+		},
+		transform: {
+			value: function transform() {
+				fgShader.transform && fgShader.transform(this);
+				vcShader.transform && vcShader.transform(this);
+			}
+		},
+		initClick: {
+			value: function initClick(target) {
+				target.addEventListener("click", this.handleClick.bind(this));
+				target.addEventListener("touchmove", this.handleTouchMove.bind(this));
+			}
+		},
+		handleClick: {
+			value: function handleClick(event) {
+				fgShader.handleClick && fgShader.handleClick(event, this);
+				vcShader.handleClick && vcShader.handleClick(event, this);
+			}
+		},
+		handleTouchMove: {
+			value: function handleTouchMove(event) {
+				fgShader.handleTouchMove && fgShader.handleTouchMove(event, this);
+				vcShader.handleTouchMove && vcShader.handleTouchMove(event, this);
+			}
+		}
+	});
+
+	return CanvasShader;
+})(CanvasWebgl);
+
+module.exports = CanvasShader;
+
+/***/ }),
+/* 3 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var _interopRequire = function (obj) { return obj && obj.__esModule ? obj["default"] : obj; };
+
+var _createClass = (function () { function defineProperties(target, props) { for (var key in props) { var prop = props[key]; prop.configurable = true; if (prop.value) prop.writable = true; } Object.defineProperties(target, props); } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
+
 var _classCallCheck = function (instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } };
 
 var GlUtils = _interopRequire(__webpack_require__(0));
@@ -262,8 +361,6 @@ var CanvasWebgl = (function () {
 		},
 		initShaders: {
 			value: function initShaders(fgShader, vcShader) {
-				var _this = this;
-
 				var fragmentShader = this.getShader(this.ctx, fgShader);
 				var vertexShader = this.getShader(this.ctx, vcShader);
 				this.shaderProgram = this.ctx.createProgram();
@@ -282,14 +379,6 @@ var CanvasWebgl = (function () {
 				this.shaderProgram.samplerUniform = this.ctx.getUniformLocation(this.shaderProgram, "uSampler");
 				this.shaderProgram.modelColor = this.ctx.getUniformLocation(this.shaderProgram, "uColor");
 				this.shaderProgram.screenRatio = this.ctx.getUniformLocation(this.shaderProgram, "screenRatio");
-				this.shaderProgram.wave = new Array(10);
-				this.waveList.forEach(function (item, key) {
-					_this.shaderProgram.wave[key] = {};
-					_this.shaderProgram.wave[key].center = _this.ctx.getUniformLocation(_this.shaderProgram, "wave[" + key + "].center");
-					_this.shaderProgram.wave[key].time = _this.ctx.getUniformLocation(_this.shaderProgram, "wave[" + key + "].time");
-					_this.shaderProgram.wave[key].shockParams = _this.ctx.getUniformLocation(_this.shaderProgram, "wave[" + key + "].shockParams");
-					_this.shaderProgram.wave[key].hasShock = _this.ctx.getUniformLocation(_this.shaderProgram, "wave[" + key + "].hasShock");
-				});
 			}
 		},
 		handleLoadedTexture: {
@@ -360,170 +449,6 @@ var CanvasWebgl = (function () {
 module.exports = CanvasWebgl;
 
 /***/ }),
-/* 3 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var _interopRequire = function (obj) { return obj && obj.__esModule ? obj["default"] : obj; };
-
-var _createClass = (function () { function defineProperties(target, props) { for (var key in props) { var prop = props[key]; prop.configurable = true; if (prop.value) prop.writable = true; } Object.defineProperties(target, props); } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
-
-var _get = function get(object, property, receiver) { var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc && desc.writable) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
-
-var _inherits = function (subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) subClass.__proto__ = superClass; };
-
-var _classCallCheck = function (instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } };
-
-var CanvasWebgl = _interopRequire(__webpack_require__(2));
-
-var GlUtils = _interopRequire(__webpack_require__(0));
-
-var fgShader = _interopRequire(__webpack_require__(4));
-
-var vcShader = _interopRequire(__webpack_require__(5));
-
-var Canvas3D = (function (_CanvasWebgl) {
-	function Canvas3D(params) {
-		_classCallCheck(this, Canvas3D);
-
-		_get(Object.getPrototypeOf(Canvas3D.prototype), "constructor", this).call(this, params);
-		/* INIT WAVE */
-		this.WAVE_LIST_SIZE = 2;
-		this.WAVE_LIFESPAN = 1.5;
-		var parent = params.parent;
-		var speed = parent.dataset.waveSpeed && parseFloat(parent.dataset.waveSpeed) || 0.02;
-		var x = parent.dataset.waveX && parseFloat(parent.dataset.waveX);
-		var y = parent.dataset.waveY && parseFloat(parent.dataset.waveY);
-		var z = parent.dataset.waveZ && parseFloat(parent.dataset.waveZ);
-		var shockParams = [x || 10.1, y || 0.8, z || 0.1];
-		this.waveParams = { shockParams: shockParams, speed: speed };
-		this.waveList = [];
-		this.initWaveList();
-		/* END INIT WAVE */
-		this.initClick(this.canvas);
-		this.lastTouchTime = -1;
-		this.meshes = {};
-		this.meshList = [{ name: "plan", texture: params.texture }];
-		this.initShaders(fgShader, vcShader);
-		var meshObj = { plan: { vertices: [-1, -1, 0, 1, -1, 0, 1, 1, 0, -1, 1, 0], vertexNormals: [0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1], textures: [0, 0, 0, 1, 0, 0, 1, 1], indices: [0, 1, 2, 0, 2, 3] } };
-		this.objStart(meshObj);
-	}
-
-	_inherits(Canvas3D, _CanvasWebgl);
-
-	_createClass(Canvas3D, {
-		objStart: {
-			value: function objStart(meshObj) {
-				var _this = this;
-
-				this.meshList.forEach(function (item, key) {
-					_this.meshes[item.name] = [];
-					for (var mesh in meshObj[item.name]) _this.meshes[item.name][mesh] = meshObj[item.name][mesh];
-					GlUtils.initMeshBuffers(_this.ctx, _this.meshes[item.name]);
-					if (_this.meshes[item.name].textures.length && item.texture !== "") _this.initTexture(_this.meshes[item.name], item.texture);
-				});
-			}
-		},
-		updateTexture: {
-			value: function updateTexture(object, url) {
-				var _this = this;
-
-				object.texture = this.ctx.createTexture();
-				object.texture.image = new Image();
-				object.texture.image.crossOrigin = "anonymous";
-				object.texture.image.onload = function () {
-					_this.handleLoadedTexture(object.texture);
-				};
-				object.texture.image.src = url;
-			}
-		},
-		render: {
-			value: function render() {
-				_get(Object.getPrototypeOf(Canvas3D.prototype), "render", this).call(this);
-			}
-		},
-		draw: {
-			value: function draw() {
-				var _this = this;
-
-				this.ctx.clear(this.ctx.COLOR_BUFFER_BIT | this.ctx.DEPTH_BUFFER_BIT);
-				this.meshList.forEach(function (item, key) {
-					_this.drawObject(_this.meshes[item.name], [1, 1, 1, 1]);
-				});
-				this.transform();
-			}
-		},
-		transform: {
-			value: function transform() {
-				var _this = this;
-
-				this.waveList.forEach(function (item) {
-					if (item.on) {
-						item.time += item.speed;
-						if (item.time > _this.WAVE_LIFESPAN) {
-							item.on = false;
-							item.center = [0, 0];
-							item.time = 0;
-						}
-					}
-				});
-			}
-		},
-		initWaveList: {
-			value: function initWaveList() {
-				var shockParams = this.waveParams.shockParams;
-				var speed = this.waveParams.speed;
-				for (var x = 0; x < this.WAVE_LIST_SIZE; x++) this.waveList.push({ time: 0, center: [0, 0], on: false, shockParams: shockParams, speed: speed });
-			}
-		},
-		initClick: {
-			value: function initClick(target) {
-				target.addEventListener("click", this.handleClick.bind(this));
-				target.addEventListener("touchmove", this.handleTouchMove.bind(this));
-			}
-		},
-		handleClick: {
-			value: function handleClick(event) {
-				var posX = event.clientX - event.target.getBoundingClientRect().left;
-				var posY = event.clientY - event.target.getBoundingClientRect().top;
-				this.setWavePos(posX, posY);
-			}
-		},
-		handleTouchMove: {
-			value: function handleTouchMove(event) {
-				if (Date.now() - this.lastTouchTime > 100) {
-					var posX = event.touches[0].clientX;
-					var posY = event.touches[0].clientY;
-					this.setWavePos(posX, posY);
-					this.lastTouchTime = Date.now();
-				}
-			}
-		},
-		setWavePos: {
-			value: function setWavePos(x, y) {
-				var ratioPosX = x / this.realWidth;
-				var ratioPosY = 1 - y / this.realHeight;
-				var waveId = -1;
-				this.waveList.forEach(function (item, key) {
-					if (!item.on && waveId === -1) waveId = key;
-				});
-				if (waveId > -1) {
-					this.waveList[waveId].center = [ratioPosX, ratioPosY];
-					this.waveList[waveId].time = 0;
-					this.waveList[waveId].on = true;
-				}
-			}
-		}
-	});
-
-	return Canvas3D;
-})(CanvasWebgl);
-
-module.exports = Canvas3D;
-
-/***/ }),
 /* 4 */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -531,7 +456,70 @@ module.exports = Canvas3D;
 
 
 module.exports = {
-    source: "\n        #define MAX_WAVE_NBR 2\n        precision mediump float;\n        varying highp vec2 vTextureCoord;\n        varying highp vec3 vLighting;\n\n        uniform sampler2D uSampler;\n        uniform vec4 uColor;\n        uniform bool uHasTexure;\n\n        uniform vec2 screenRatio;\n\n        struct waveStruct{\n            vec2 center;\n            float time;\n            vec3 shockParams;\n            bool hasShock;\n        };\n\n        uniform waveStruct wave[MAX_WAVE_NBR];\n\n        void main(void){\n            vec4 fragmentColor;\n            if(uHasTexure)\n                fragmentColor = texture2D(uSampler, vTextureCoord);\n            else\n                fragmentColor = vec4(uColor.rgb, uColor.a);\n            if (fragmentColor.a <= 0.1) discard;\n\n            vec2 uv = vTextureCoord.xy;\n            vec2 texCoord = uv;\n\n            for (int count=0;count < MAX_WAVE_NBR;count++)\n            {\n                float distance = distance(uv*screenRatio, wave[count].center*screenRatio);\n                if ((distance <= (wave[count].time + wave[count].shockParams.z)) && (distance >= (wave[count].time - wave[count].shockParams.z)))\n                {\n                    float diff = (distance - wave[count].time); \n                    float powDiff = 1.0 - pow(abs(diff*wave[count].shockParams.x), wave[count].shockParams.y); \n                    float diffTime = diff  * powDiff;\n                    vec2 diffUV = normalize((uv * screenRatio) - (wave[count].center * screenRatio)); \n                    texCoord = uv + (diffUV * diffTime);\n                }\n            }\n            gl_FragColor = texture2D(uSampler, texCoord);\n        }\n    ", type: "x-shader/x-fragment"
+	type: "x-shader/x-fragment",
+	source: "\n        #define MAX_WAVE_NBR 2\n        precision mediump float;\n        varying highp vec2 vTextureCoord;\n\n        uniform sampler2D uSampler;\n        uniform vec4 uColor;\n        uniform bool uHasTexure;\n\n        uniform vec2 screenRatio;\n\n        struct waveStruct{\n            vec2 center;\n            float time;\n            vec3 shockParams;\n            bool hasShock;\n        };\n\n        uniform waveStruct wave[MAX_WAVE_NBR];\n\n        void main(void){\n            vec4 fragmentColor;\n            if(uHasTexure)\n                fragmentColor = texture2D(uSampler, vTextureCoord);\n            else\n                fragmentColor = vec4(uColor.rgb, uColor.a);\n            if (fragmentColor.a <= 0.1) discard;\n\n            vec2 uv = vTextureCoord.xy;\n            vec2 texCoord = uv;\n\n            for (int count=0;count < MAX_WAVE_NBR;count++)\n            {\n                float distance = distance(uv*screenRatio, wave[count].center*screenRatio);\n                if ((distance <= (wave[count].time + wave[count].shockParams.z)) && (distance >= (wave[count].time - wave[count].shockParams.z)))\n                {\n                    float diff = (distance - wave[count].time); \n                    float powDiff = 1.0 - pow(abs(diff*wave[count].shockParams.x), wave[count].shockParams.y); \n                    float diffTime = diff  * powDiff;\n                    vec2 diffUV = normalize((uv * screenRatio) - (wave[count].center * screenRatio)); \n                    texCoord = uv + (diffUV * diffTime);\n                }\n            }\n            gl_FragColor = texture2D(uSampler, texCoord);\n        }\n    ",
+	setParams: function setParams(self, params) {
+		self.WAVE_LIST_SIZE = 2;
+		self.WAVE_LIFESPAN = 1.5;
+		self.lastTouchTime = -1;
+		var parent = params.parent;
+		var speed = parent.dataset.waveSpeed && parseFloat(parent.dataset.waveSpeed) || 0.02;
+		var x = parent.dataset.waveX && parseFloat(parent.dataset.waveX);
+		var y = parent.dataset.waveY && parseFloat(parent.dataset.waveY);
+		var z = parent.dataset.waveZ && parseFloat(parent.dataset.waveZ);
+		var shockParams = [x || 10.1, y || 0.8, z || 0.1];
+		self.waveParams = { shockParams: shockParams, speed: speed };
+		self.waveList = [];
+		for (var x = 0; x < self.WAVE_LIST_SIZE; x++) self.waveList.push({ time: 0, center: [0, 0], on: false, shockParams: self.waveParams.shockParams, speed: self.waveParams.speed });
+	},
+	init: function init(self) {
+		self.shaderProgram.wave = new Array(10);
+		self.waveList.forEach(function (item, key) {
+			self.shaderProgram.wave[key] = {};
+			self.shaderProgram.wave[key].center = self.ctx.getUniformLocation(self.shaderProgram, "wave[" + key + "].center");
+			self.shaderProgram.wave[key].time = self.ctx.getUniformLocation(self.shaderProgram, "wave[" + key + "].time");
+			self.shaderProgram.wave[key].shockParams = self.ctx.getUniformLocation(self.shaderProgram, "wave[" + key + "].shockParams");
+			self.shaderProgram.wave[key].hasShock = self.ctx.getUniformLocation(self.shaderProgram, "wave[" + key + "].hasShock");
+		});
+	},
+	transform: function transform(self) {
+		self.waveList.forEach(function (item) {
+			if (item.on) {
+				item.time += item.speed;
+				if (item.time > self.WAVE_LIFESPAN) {
+					item.on = false;
+					item.center = [0, 0];
+					item.time = 0;
+				}
+			}
+		});
+	},
+	handleClick: function handleClick(event, self) {
+		var posX = event.clientX - event.target.getBoundingClientRect().left;
+		var posY = event.clientY - event.target.getBoundingClientRect().top;
+		this.setWavePos(self, posX, posY);
+	},
+	handleTouchMove: function handleTouchMove(event, self) {
+		if (Date.now() - self.lastTouchTime > 100) {
+			var posX = event.touches[0].clientX - event.target.getBoundingClientRect().left;
+			var posY = event.touches[0].clientY - event.target.getBoundingClientRect().top;
+			this.setWavePos(self, posX, posY);
+			self.lastTouchTime = Date.now();
+		}
+	},
+	setWavePos: function setWavePos(self, x, y) {
+		var ratioPosX = x / self.realWidth;
+		var ratioPosY = 1 - y / self.realHeight;
+		var waveId = -1;
+		self.waveList.forEach(function (item, key) {
+			if (!item.on && waveId === -1) waveId = key;
+		});
+		if (waveId > -1) {
+			self.waveList[waveId].center = [ratioPosX, ratioPosY];
+			self.waveList[waveId].time = 0;
+			self.waveList[waveId].on = true;
+		}
+	}
 };
 
 /***/ }),
@@ -542,7 +530,8 @@ module.exports = {
 
 
 module.exports = {
-    source: "\n        precision mediump float;\n        attribute highp vec3 aVertexNormal;\n        attribute highp vec3 aVertexPosition;\n\n        uniform highp mat4 uNormalMatrix;\n        uniform highp mat4 uMVMatrix;\n        uniform highp mat4 uPMatrix;\n\n        varying highp vec2 vTextureCoord;\n        varying highp vec3 vLighting;\n\n        const vec2 madd=vec2(0.5, 0.5);\n        attribute vec2 vertexIn;\n\n\n        void main(void){\n            gl_Position = vec4(aVertexPosition.xy, 0.0, 1.0);\n            vTextureCoord = aVertexPosition.xy*madd+madd;\n\n            highp vec3 ambientLight = vec3(0.6, 0.6, 0.6);\n            highp vec3 directionalLightColor = vec3(0.5, 0.5, 0.75);\n            highp vec3 directionalVector = vec3(0.85, 0.8, -0.40);\n\n            highp vec4 transformedNormal = uNormalMatrix * vec4(aVertexNormal, 1.0);\n\n            highp float directional = max(dot(transformedNormal.xyz, directionalVector), 0.0);\n            vLighting = ambientLight + (directionalLightColor * directional);\n        }\n    ", type: "x-shader/x-vertex"
+    type: "x-shader/x-vertex",
+    source: "\n        precision mediump float;\n        attribute highp vec3 aVertexNormal;\n        attribute highp vec3 aVertexPosition;\n\n        uniform highp mat4 uNormalMatrix;\n        uniform highp mat4 uMVMatrix;\n        uniform highp mat4 uPMatrix;\n\n        varying highp vec2 vTextureCoord;\n        varying highp vec3 vLighting;\n\n        const vec2 madd=vec2(0.5, 0.5);\n        attribute vec2 vertexIn;\n\n\n        void main(void){\n            gl_Position = vec4(aVertexPosition.xy, 0.0, 1.0);\n            vTextureCoord = aVertexPosition.xy*madd+madd;\n\n            highp vec3 ambientLight = vec3(0.6, 0.6, 0.6);\n            highp vec3 directionalLightColor = vec3(0.5, 0.5, 0.75);\n            highp vec3 directionalVector = vec3(0.85, 0.8, -0.40);\n\n            highp vec4 transformedNormal = uNormalMatrix * vec4(aVertexNormal, 1.0);\n\n            highp float directional = max(dot(transformedNormal.xyz, directionalVector), 0.0);\n            vLighting = ambientLight + (directionalLightColor * directional);\n        }\n    "
 };
 
 /***/ }),
@@ -558,25 +547,22 @@ var _classCallCheck = function (instance, Constructor) { if (!(instance instance
 
 var html2canvas = _interopRequire(__webpack_require__(7));
 
-var Canvas3D = _interopRequire(__webpack_require__(3));
+var CanvasShader = _interopRequire(__webpack_require__(2));
 
 var Shapeshift = function Shapeshift(targetClass) {
-  _classCallCheck(this, Shapeshift);
+	_classCallCheck(this, Shapeshift);
 
-  var action = function (item) {
-    var positionStyle = getComputedStyle(item).position;
-    if (positionStyle === "static" || positionStyle === "") item.style.position = "relative";
-    html2canvas(item).then(function (canvas) {
-      item.style.border = "none";
-      new Canvas3D({ parent: item, id: "canvas-wavify-" + Date.now(), hd: true, texture: canvas.toDataURL("png") });
-    });
-  };
-  if (typeof targetClass === "string") {
-    var itemList = document.getElementsByClassName(targetClass);
-    [].forEach.call(itemList, function (key) {
-      action(item);
-    });
-  } else action(targetClass);
+	var action = function (item) {
+		var positionStyle = getComputedStyle(item).position;
+		if (positionStyle === "static" || positionStyle === "") item.style.position = "relative";
+		html2canvas(item).then(function (canvas) {
+			item.style.border = "none";
+			new CanvasShader({ parent: item, id: "canvas-wavify-" + Date.now(), hd: true, texture: canvas.toDataURL("png") });
+		});
+	};
+	if (typeof targetClass === "string") [].forEach.call(document.getElementsByClassName(targetClass), function (item) {
+		action(item);
+	});else action(targetClass);
 };
 
 module.exports = Shapeshift;

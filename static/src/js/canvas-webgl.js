@@ -71,14 +71,6 @@ class CanvasWebgl{
 		this.shaderProgram.samplerUniform = this.ctx.getUniformLocation(this.shaderProgram, "uSampler");
 		this.shaderProgram.modelColor = this.ctx.getUniformLocation(this.shaderProgram, "uColor");
 		this.shaderProgram.screenRatio = this.ctx.getUniformLocation(this.shaderProgram, "screenRatio");
-		this.shaderProgram.wave = new Array(10);
-		this.waveList.forEach((item, key) => {
-			this.shaderProgram.wave[key] = {};
-			this.shaderProgram.wave[key].center = this.ctx.getUniformLocation(this.shaderProgram, "wave[" + key + "].center");
-			this.shaderProgram.wave[key].time = this.ctx.getUniformLocation(this.shaderProgram, "wave[" + key + "].time");
-			this.shaderProgram.wave[key].shockParams = this.ctx.getUniformLocation(this.shaderProgram, "wave[" + key + "].shockParams");
-			this.shaderProgram.wave[key].hasShock = this.ctx.getUniformLocation(this.shaderProgram, "wave[" + key + "].hasShock");
-		})
 	}
 	handleLoadedTexture(texture){
 		this.ctx.pixelStorei(this.ctx.UNPACK_FLIP_Y_WEBGL, true);

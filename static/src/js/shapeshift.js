@@ -1,5 +1,5 @@
 import html2canvas from 'html2canvas';
-import Canvas3D from './canvas3d.js';
+import CanvasShader from './canvas-shader.js';
 
 class Shapeshift{
 	constructor(targetClass){
@@ -9,14 +9,11 @@ class Shapeshift{
 				item.style.position = "relative";
 			html2canvas(item).then(function(canvas) {
 				item.style.border = 'none';
-				new Canvas3D({parent:item, id:'canvas-wavify-' + Date.now(), hd:true, texture:canvas.toDataURL('png')});
+				new CanvasShader({parent:item, id:'canvas-wavify-' + Date.now(), hd:true, texture:canvas.toDataURL('png')});
 			});
         }
         if (typeof(targetClass) === "string")
-        {
-            var itemList = document.getElementsByClassName(targetClass);
-            [].forEach.call(itemList, (key) => {action(item);});
-        }
+            [].forEach.call(document.getElementsByClassName(targetClass), (item) => {action(item);});
         else
             action(targetClass);
 	}

@@ -1,4 +1,5 @@
 export default {
+    type:'x-shader/x-vertex',
     source:`
         precision mediump float;
         attribute highp vec3 aVertexNormal;
@@ -28,5 +29,5 @@ export default {
             highp float directional = max(dot(transformedNormal.xyz, directionalVector), 0.0);
             vLighting = ambientLight + (directionalLightColor * directional);
         }
-    `, type:'x-shader/x-vertex'
+    `
 };
