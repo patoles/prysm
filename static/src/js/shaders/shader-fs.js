@@ -1,7 +1,7 @@
 export default {
     type:'x-shader/x-fragment',
     source:`
-        #define MAX_WAVE_NBR 2
+        #define MAX_WAVE_NBR 10
         precision mediump float;
         varying highp vec2 vTextureCoord;
 
@@ -47,7 +47,7 @@ export default {
         }
     `,
     setParams(self, params){
-		self.WAVE_LIST_SIZE = 2;
+		self.WAVE_LIST_SIZE = 10;
         self.WAVE_LIFESPAN = 1.5;
         self.lastTouchTime = -1;
 		var parent = params.parent;

@@ -1,6 +1,6 @@
 import GlUtils from './gl-utils.js';
 
-class CanvasWebgl{
+class WebglEngine{
 	constructor(params){
 		GlUtils.setupCanvas(this, params);
 	}
@@ -40,9 +40,9 @@ class CanvasWebgl{
 		}
 		return shader;
 	}
-	initShaders(fgShader, vcShader){
-		var fragmentShader = this.getShader(this.ctx, fgShader);
-		var vertexShader = this.getShader(this.ctx, vcShader);
+	initShaders(fs, vs){
+		var fragmentShader = this.getShader(this.ctx, fs);
+		var vertexShader = this.getShader(this.ctx, vs);
 		this.shaderProgram = this.ctx.createProgram();
 		this.ctx.attachShader(this.shaderProgram, vertexShader);
 		this.ctx.attachShader(this.shaderProgram, fragmentShader);
@@ -110,4 +110,4 @@ class CanvasWebgl{
 	}
 }
 
-export default CanvasWebgl;
+export default WebglEngine;

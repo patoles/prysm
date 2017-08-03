@@ -176,7 +176,7 @@ module.exports = _GlUtils;
 
 var _interopRequire = function (obj) { return obj && obj.__esModule ? obj["default"] : obj; };
 
-var Shapeshift = _interopRequire(__webpack_require__(6));
+var Shapeshift = _interopRequire(__webpack_require__(5));
 
 window.addEventListener("load", function () {
 	var item = document.getElementsByClassName("wavify")[0];
@@ -201,15 +201,15 @@ var _inherits = function (subClass, superClass) { if (typeof superClass !== "fun
 
 var _classCallCheck = function (instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } };
 
-var CanvasWebgl = _interopRequire(__webpack_require__(3));
+var WebglEngine = _interopRequire(__webpack_require__(6));
 
 var GlUtils = _interopRequire(__webpack_require__(0));
 
-var fgShader = _interopRequire(__webpack_require__(4));
+var fgShader = _interopRequire(__webpack_require__(3));
 
-var vcShader = _interopRequire(__webpack_require__(5));
+var vcShader = _interopRequire(__webpack_require__(4));
 
-var CanvasShader = (function (_CanvasWebgl) {
+var CanvasShader = (function (_WebglEngine) {
 	function CanvasShader(params) {
 		_classCallCheck(this, CanvasShader);
 
@@ -223,7 +223,7 @@ var CanvasShader = (function (_CanvasWebgl) {
 		this.initTexture(this.meshes.plan, params.texture);
 	}
 
-	_inherits(CanvasShader, _CanvasWebgl);
+	_inherits(CanvasShader, _WebglEngine);
 
 	_createClass(CanvasShader, {
 		initShaders: {
@@ -267,12 +267,131 @@ var CanvasShader = (function (_CanvasWebgl) {
 	});
 
 	return CanvasShader;
-})(CanvasWebgl);
+})(WebglEngine);
 
 module.exports = CanvasShader;
 
 /***/ }),
 /* 3 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+module.exports = {
+	type: "x-shader/x-fragment",
+	source: "\n        #define MAX_WAVE_NBR 10\n        precision mediump float;\n        varying highp vec2 vTextureCoord;\n\n        uniform sampler2D uSampler;\n        uniform vec4 uColor;\n        uniform bool uHasTexure;\n\n        uniform vec2 screenRatio;\n\n        struct waveStruct{\n            vec2 center;\n            float time;\n            vec3 shockParams;\n            bool hasShock;\n        };\n\n        uniform waveStruct wave[MAX_WAVE_NBR];\n\n        void main(void){\n            vec4 fragmentColor;\n            if(uHasTexure)\n                fragmentColor = texture2D(uSampler, vTextureCoord);\n            else\n                fragmentColor = vec4(uColor.rgb, uColor.a);\n            if (fragmentColor.a <= 0.1) discard;\n\n            vec2 uv = vTextureCoord.xy;\n            vec2 texCoord = uv;\n\n            for (int count=0;count < MAX_WAVE_NBR;count++)\n            {\n                float distance = distance(uv*screenRatio, wave[count].center*screenRatio);\n                if ((distance <= (wave[count].time + wave[count].shockParams.z)) && (distance >= (wave[count].time - wave[count].shockParams.z)))\n                {\n                    float diff = (distance - wave[count].time); \n                    float powDiff = 1.0 - pow(abs(diff*wave[count].shockParams.x), wave[count].shockParams.y); \n                    float diffTime = diff  * powDiff;\n                    vec2 diffUV = normalize((uv * screenRatio) - (wave[count].center * screenRatio)); \n                    texCoord = uv + (diffUV * diffTime);\n                }\n            }\n            gl_FragColor = texture2D(uSampler, texCoord);\n        }\n    ",
+	setParams: function setParams(self, params) {
+		self.WAVE_LIST_SIZE = 10;
+		self.WAVE_LIFESPAN = 1.5;
+		self.lastTouchTime = -1;
+		var parent = params.parent;
+		var speed = parent.dataset.waveSpeed && parseFloat(parent.dataset.waveSpeed) || 0.02;
+		var x = parent.dataset.waveX && parseFloat(parent.dataset.waveX);
+		var y = parent.dataset.waveY && parseFloat(parent.dataset.waveY);
+		var z = parent.dataset.waveZ && parseFloat(parent.dataset.waveZ);
+		var shockParams = [x || 10.1, y || 0.8, z || 0.1];
+		self.waveParams = { shockParams: shockParams, speed: speed };
+		self.waveList = [];
+		for (var x = 0; x < self.WAVE_LIST_SIZE; x++) self.waveList.push({ time: 0, center: [0, 0], on: false, shockParams: self.waveParams.shockParams, speed: self.waveParams.speed });
+	},
+	init: function init(self) {
+		self.shaderProgram.wave = new Array(10);
+		self.waveList.forEach(function (item, key) {
+			self.shaderProgram.wave[key] = {};
+			self.shaderProgram.wave[key].center = self.ctx.getUniformLocation(self.shaderProgram, "wave[" + key + "].center");
+			self.shaderProgram.wave[key].time = self.ctx.getUniformLocation(self.shaderProgram, "wave[" + key + "].time");
+			self.shaderProgram.wave[key].shockParams = self.ctx.getUniformLocation(self.shaderProgram, "wave[" + key + "].shockParams");
+			self.shaderProgram.wave[key].hasShock = self.ctx.getUniformLocation(self.shaderProgram, "wave[" + key + "].hasShock");
+		});
+	},
+	transform: function transform(self) {
+		self.waveList.forEach(function (item) {
+			if (item.on) {
+				item.time += item.speed;
+				if (item.time > self.WAVE_LIFESPAN) {
+					item.on = false;
+					item.center = [0, 0];
+					item.time = 0;
+				}
+			}
+		});
+	},
+	handleClick: function handleClick(event, self) {
+		var posX = event.clientX - event.target.getBoundingClientRect().left;
+		var posY = event.clientY - event.target.getBoundingClientRect().top;
+		this.setWavePos(self, posX, posY);
+	},
+	handleTouchMove: function handleTouchMove(event, self) {
+		if (Date.now() - self.lastTouchTime > 100) {
+			var posX = event.touches[0].clientX - event.target.getBoundingClientRect().left;
+			var posY = event.touches[0].clientY - event.target.getBoundingClientRect().top;
+			this.setWavePos(self, posX, posY);
+			self.lastTouchTime = Date.now();
+		}
+	},
+	setWavePos: function setWavePos(self, x, y) {
+		var ratioPosX = x / self.realWidth;
+		var ratioPosY = 1 - y / self.realHeight;
+		var waveId = -1;
+		self.waveList.forEach(function (item, key) {
+			if (!item.on && waveId === -1) waveId = key;
+		});
+		if (waveId > -1) {
+			self.waveList[waveId].center = [ratioPosX, ratioPosY];
+			self.waveList[waveId].time = 0;
+			self.waveList[waveId].on = true;
+		}
+	}
+};
+
+/***/ }),
+/* 4 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+module.exports = {
+    type: "x-shader/x-vertex",
+    source: "\n        precision mediump float;\n        attribute highp vec3 aVertexNormal;\n        attribute highp vec3 aVertexPosition;\n\n        uniform highp mat4 uNormalMatrix;\n\n        varying highp vec2 vTextureCoord;\n        varying highp vec3 vLighting;\n\n        const vec2 madd=vec2(0.5, 0.5);\n        attribute vec2 vertexIn;\n\n\n        void main(void){\n            gl_Position = vec4(aVertexPosition.xy, 0.0, 1.0);\n            vTextureCoord = aVertexPosition.xy*madd+madd;\n\n            highp vec3 ambientLight = vec3(0.6, 0.6, 0.6);\n            highp vec3 directionalLightColor = vec3(0.5, 0.5, 0.75);\n            highp vec3 directionalVector = vec3(0.85, 0.8, -0.40);\n\n            highp vec4 transformedNormal = uNormalMatrix * vec4(aVertexNormal, 1.0);\n\n            highp float directional = max(dot(transformedNormal.xyz, directionalVector), 0.0);\n            vLighting = ambientLight + (directionalLightColor * directional);\n        }\n    "
+};
+
+/***/ }),
+/* 5 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var _interopRequire = function (obj) { return obj && obj.__esModule ? obj["default"] : obj; };
+
+var _classCallCheck = function (instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } };
+
+var html2canvas = _interopRequire(__webpack_require__(7));
+
+var CanvasShader = _interopRequire(__webpack_require__(2));
+
+var Shapeshift = function Shapeshift(targetClass) {
+	_classCallCheck(this, Shapeshift);
+
+	var action = function (item) {
+		var positionStyle = getComputedStyle(item).position;
+		if (positionStyle === "static" || positionStyle === "") item.style.position = "relative";
+		html2canvas(item).then(function (canvas) {
+			item.style.border = "none";
+			new CanvasShader({ parent: item, id: "canvas-wavify-" + Date.now(), hd: true, texture: canvas.toDataURL("png") });
+		});
+	};
+	if (typeof targetClass === "string") [].forEach.call(document.getElementsByClassName(targetClass), function (item) {
+		action(item);
+	});else action(targetClass);
+};
+
+module.exports = Shapeshift;
+
+/***/ }),
+/* 6 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -286,14 +405,14 @@ var _classCallCheck = function (instance, Constructor) { if (!(instance instance
 
 var GlUtils = _interopRequire(__webpack_require__(0));
 
-var CanvasWebgl = (function () {
-	function CanvasWebgl(params) {
-		_classCallCheck(this, CanvasWebgl);
+var WebglEngine = (function () {
+	function WebglEngine(params) {
+		_classCallCheck(this, WebglEngine);
 
 		GlUtils.setupCanvas(this, params);
 	}
 
-	_createClass(CanvasWebgl, {
+	_createClass(WebglEngine, {
 		render: {
 			value: function render() {
 				if (this.active) {
@@ -333,9 +452,9 @@ var CanvasWebgl = (function () {
 			}
 		},
 		initShaders: {
-			value: function initShaders(fgShader, vcShader) {
-				var fragmentShader = this.getShader(this.ctx, fgShader);
-				var vertexShader = this.getShader(this.ctx, vcShader);
+			value: function initShaders(fs, vs) {
+				var fragmentShader = this.getShader(this.ctx, fs);
+				var vertexShader = this.getShader(this.ctx, vs);
 				this.shaderProgram = this.ctx.createProgram();
 				this.ctx.attachShader(this.shaderProgram, vertexShader);
 				this.ctx.attachShader(this.shaderProgram, fragmentShader);
@@ -412,129 +531,10 @@ var CanvasWebgl = (function () {
 		}
 	});
 
-	return CanvasWebgl;
+	return WebglEngine;
 })();
 
-module.exports = CanvasWebgl;
-
-/***/ }),
-/* 4 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-module.exports = {
-	type: "x-shader/x-fragment",
-	source: "\n        #define MAX_WAVE_NBR 2\n        precision mediump float;\n        varying highp vec2 vTextureCoord;\n\n        uniform sampler2D uSampler;\n        uniform vec4 uColor;\n        uniform bool uHasTexure;\n\n        uniform vec2 screenRatio;\n\n        struct waveStruct{\n            vec2 center;\n            float time;\n            vec3 shockParams;\n            bool hasShock;\n        };\n\n        uniform waveStruct wave[MAX_WAVE_NBR];\n\n        void main(void){\n            vec4 fragmentColor;\n            if(uHasTexure)\n                fragmentColor = texture2D(uSampler, vTextureCoord);\n            else\n                fragmentColor = vec4(uColor.rgb, uColor.a);\n            if (fragmentColor.a <= 0.1) discard;\n\n            vec2 uv = vTextureCoord.xy;\n            vec2 texCoord = uv;\n\n            for (int count=0;count < MAX_WAVE_NBR;count++)\n            {\n                float distance = distance(uv*screenRatio, wave[count].center*screenRatio);\n                if ((distance <= (wave[count].time + wave[count].shockParams.z)) && (distance >= (wave[count].time - wave[count].shockParams.z)))\n                {\n                    float diff = (distance - wave[count].time); \n                    float powDiff = 1.0 - pow(abs(diff*wave[count].shockParams.x), wave[count].shockParams.y); \n                    float diffTime = diff  * powDiff;\n                    vec2 diffUV = normalize((uv * screenRatio) - (wave[count].center * screenRatio)); \n                    texCoord = uv + (diffUV * diffTime);\n                }\n            }\n            gl_FragColor = texture2D(uSampler, texCoord);\n        }\n    ",
-	setParams: function setParams(self, params) {
-		self.WAVE_LIST_SIZE = 2;
-		self.WAVE_LIFESPAN = 1.5;
-		self.lastTouchTime = -1;
-		var parent = params.parent;
-		var speed = parent.dataset.waveSpeed && parseFloat(parent.dataset.waveSpeed) || 0.02;
-		var x = parent.dataset.waveX && parseFloat(parent.dataset.waveX);
-		var y = parent.dataset.waveY && parseFloat(parent.dataset.waveY);
-		var z = parent.dataset.waveZ && parseFloat(parent.dataset.waveZ);
-		var shockParams = [x || 10.1, y || 0.8, z || 0.1];
-		self.waveParams = { shockParams: shockParams, speed: speed };
-		self.waveList = [];
-		for (var x = 0; x < self.WAVE_LIST_SIZE; x++) self.waveList.push({ time: 0, center: [0, 0], on: false, shockParams: self.waveParams.shockParams, speed: self.waveParams.speed });
-	},
-	init: function init(self) {
-		self.shaderProgram.wave = new Array(10);
-		self.waveList.forEach(function (item, key) {
-			self.shaderProgram.wave[key] = {};
-			self.shaderProgram.wave[key].center = self.ctx.getUniformLocation(self.shaderProgram, "wave[" + key + "].center");
-			self.shaderProgram.wave[key].time = self.ctx.getUniformLocation(self.shaderProgram, "wave[" + key + "].time");
-			self.shaderProgram.wave[key].shockParams = self.ctx.getUniformLocation(self.shaderProgram, "wave[" + key + "].shockParams");
-			self.shaderProgram.wave[key].hasShock = self.ctx.getUniformLocation(self.shaderProgram, "wave[" + key + "].hasShock");
-		});
-	},
-	transform: function transform(self) {
-		self.waveList.forEach(function (item) {
-			if (item.on) {
-				item.time += item.speed;
-				if (item.time > self.WAVE_LIFESPAN) {
-					item.on = false;
-					item.center = [0, 0];
-					item.time = 0;
-				}
-			}
-		});
-	},
-	handleClick: function handleClick(event, self) {
-		var posX = event.clientX - event.target.getBoundingClientRect().left;
-		var posY = event.clientY - event.target.getBoundingClientRect().top;
-		this.setWavePos(self, posX, posY);
-	},
-	handleTouchMove: function handleTouchMove(event, self) {
-		if (Date.now() - self.lastTouchTime > 100) {
-			var posX = event.touches[0].clientX - event.target.getBoundingClientRect().left;
-			var posY = event.touches[0].clientY - event.target.getBoundingClientRect().top;
-			this.setWavePos(self, posX, posY);
-			self.lastTouchTime = Date.now();
-		}
-	},
-	setWavePos: function setWavePos(self, x, y) {
-		var ratioPosX = x / self.realWidth;
-		var ratioPosY = 1 - y / self.realHeight;
-		var waveId = -1;
-		self.waveList.forEach(function (item, key) {
-			if (!item.on && waveId === -1) waveId = key;
-		});
-		if (waveId > -1) {
-			self.waveList[waveId].center = [ratioPosX, ratioPosY];
-			self.waveList[waveId].time = 0;
-			self.waveList[waveId].on = true;
-		}
-	}
-};
-
-/***/ }),
-/* 5 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-module.exports = {
-    type: "x-shader/x-vertex",
-    source: "\n        precision mediump float;\n        attribute highp vec3 aVertexNormal;\n        attribute highp vec3 aVertexPosition;\n\n        uniform highp mat4 uNormalMatrix;\n\n        varying highp vec2 vTextureCoord;\n        varying highp vec3 vLighting;\n\n        const vec2 madd=vec2(0.5, 0.5);\n        attribute vec2 vertexIn;\n\n\n        void main(void){\n            gl_Position = vec4(aVertexPosition.xy, 0.0, 1.0);\n            vTextureCoord = aVertexPosition.xy*madd+madd;\n\n            highp vec3 ambientLight = vec3(0.6, 0.6, 0.6);\n            highp vec3 directionalLightColor = vec3(0.5, 0.5, 0.75);\n            highp vec3 directionalVector = vec3(0.85, 0.8, -0.40);\n\n            highp vec4 transformedNormal = uNormalMatrix * vec4(aVertexNormal, 1.0);\n\n            highp float directional = max(dot(transformedNormal.xyz, directionalVector), 0.0);\n            vLighting = ambientLight + (directionalLightColor * directional);\n        }\n    "
-};
-
-/***/ }),
-/* 6 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var _interopRequire = function (obj) { return obj && obj.__esModule ? obj["default"] : obj; };
-
-var _classCallCheck = function (instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } };
-
-var html2canvas = _interopRequire(__webpack_require__(7));
-
-var CanvasShader = _interopRequire(__webpack_require__(2));
-
-var Shapeshift = function Shapeshift(targetClass) {
-	_classCallCheck(this, Shapeshift);
-
-	var action = function (item) {
-		var positionStyle = getComputedStyle(item).position;
-		if (positionStyle === "static" || positionStyle === "") item.style.position = "relative";
-		html2canvas(item).then(function (canvas) {
-			item.style.border = "none";
-			new CanvasShader({ parent: item, id: "canvas-wavify-" + Date.now(), hd: true, texture: canvas.toDataURL("png") });
-		});
-	};
-	if (typeof targetClass === "string") [].forEach.call(document.getElementsByClassName(targetClass), function (item) {
-		action(item);
-	});else action(targetClass);
-};
-
-module.exports = Shapeshift;
+module.exports = WebglEngine;
 
 /***/ }),
 /* 7 */

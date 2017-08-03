@@ -1,9 +1,9 @@
-import CanvasWebgl from './canvas-webgl';
+import WebglEngine from './webgl-engine';
 import GlUtils from './gl-utils.js';
 import fgShader from './shaders/shader-fs';
 import vcShader from './shaders/shader-vs';
 
-class CanvasShader extends CanvasWebgl{
+class CanvasShader extends WebglEngine{
 	constructor(params){
 		super(params);
 		fgShader.setParams && fgShader.setParams(this, params);
