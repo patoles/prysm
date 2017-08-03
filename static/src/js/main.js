@@ -14,7 +14,7 @@ window.addEventListener("load", () => {
 			var y = item.dataset.waveY && parseFloat(item.dataset.waveY);
 			var z = item.dataset.waveZ && parseFloat(item.dataset.waveZ);
 			var shockParams = [x || 10.1, y || 0.8, z || 0.1];
-			new Canvas3D({parent:item, id:'canvas-wavify-' + key, hd:true, hide:false, texture:canvas.toDataURL('png'), waveParams:{shockParams, speed}});
+			new Canvas3D({parent:item, id:'canvas-wavify-' + key, hd:true, texture:canvas.toDataURL('png'), waveParams:{shockParams, speed}});
 		});
 	});
 });

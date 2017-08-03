@@ -26,9 +26,12 @@ var objPool = null;
 class Canvas3D extends CanvasWebgl{
 	constructor(params){
 		super(params);
+		this.waveParams = params.waveParams || {shockParams:[10.1,0.8,0.1], speed:0.02};
+		this.waveList = [];
+		this.initWaveList();
+		this.initClick(this.canvas);
 		this.lastTouchTime = -1;
 		this.meshes;
-		this.hd = params.hd;
 		this.getConf(() => {
 			this.totalTextures = 0;
 			this.loadedTextures = 0;
@@ -132,8 +135,8 @@ class Canvas3D extends CanvasWebgl{
 		}
 	}
 	setWavePos(x, y){
-		var ratioPosX = x / this.oldWidth;
-		var ratioPosY =  1 - (y / this.oldHeight);
+		var ratioPosX = x / this.realWidth;
+		var ratioPosY =  1 - (y / this.realHeight);
 		var waveId = -1;
 		this.waveList.forEach((item, key) => {
 			if (!item.on && waveId === -1)

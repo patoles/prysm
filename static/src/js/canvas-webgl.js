@@ -4,70 +4,7 @@ import vcShader from './shaders/shader-vs';
 
 class CanvasWebgl{
 	constructor(params){
-		this.frameInfo = {
-			fpsInterval:0, startTime:0, now:0,
-			then:0, elapsed:0, fps:60, fpsRate:0
-		};
-		this.glUtils = new GlUtils();
-		this.waveParams = params.waveParams || {shockParams:[10.1,0.8,0.1], speed:0.02};
-		this.waveList = [];
-		this.initWaveList();
-		var app = params.parent || document.getElementById('main');
-		this.screenHeight = params.height || app.clientHeight;
-		this.screenWidth = params.width || app.clientWidth;
-		this.canvas = document.getElementById(params.id) || document.createElement('canvas');
-		this.active = true;
-		this.canvas.id = params.id;
-		this.canvas.className = 'canvas hide';
-		this.canvas.height = this.screenHeight;
-		this.canvas.width = this.screenWidth;
-		this.ctx = this.glUtils.webgl_support(this.canvas);
-		this.hidden = params.hide;
-		this.ctx.viewport(0, 0, this.canvas.width, this.canvas.height);
-		this.ctx.font = "14px Arial";
-		this.ctx.fillStyle="#ffffff";
-		this.ctx.imageSmoothingEnabled = true;
-		this.ctx.imageSmoothingQuality = "high";
-		this.oldWidth = this.canvas.width;
-		this.oldHeight = this.canvas.height;
-		if (params.hd)
-		{
-			this.devicePixelRatio = window.devicePixelRatio || 1,
-			this.backingStoreRatio = this.ctx.webkitBackingStorePixelRatio || this.ctx.mozBackingStorePixelRatio || this.ctx.msBackingStorePixelRatio || this.ctx.oBackingStorePixelRatio || this.ctx.backingStorePixelRatio || 1;
-			this.pixelRatio = this.devicePixelRatio / this.backingStoreRatio;
-			if (this.devicePixelRatio !== this.backingStoreRatio)
-			{
-				this.canvas.width = this.oldWidth * this.pixelRatio;
-				this.canvas.height = this.oldHeight * this.pixelRatio;
-				this.canvas.style.width = this.oldWidth + 'px';
-				this.canvas.style.height = this.oldHeight + 'px';
-				this.ctx.viewport(0, 0, this.canvas.width, this.canvas.height);
-			}
-		}
-		this.screenRatio = this.canvas.height / this.canvas.width;
-		this.frameInfo.fpsInterval = 1000 / this.frameInfo.fps;
-		this.frameInfo.then = Date.now();
-		this.frameInfo.startTime = this.frameInfo.then;
-		this.shaderProgram = null;
-		this.clearScreen();
-		this.ctx.enable(this.ctx.DEPTH_TEST);
-		this.ctx.depthFunc(this.ctx.LEQUAL);
-		this.ctx.pixelStorei(this.ctx.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
-		this.ctx.clear(this.ctx.COLOR_BUFFER_BIT | this.ctx.DEPTH_BUFFER_BIT);
-		if (this.hidden)
-			this.canvas.className = 'canvas hide';
-		if (!document.getElementById(params.id))
-			app.appendChild(this.canvas);
-		this.initShaders();
-		this.initClick(this.canvas);
-	}
-	checkFrameInterval(){
-		this.frameInfo.now = Date.now();
-		this.frameInfo.elapsed = this.frameInfo.now - this.frameInfo.then;
-		return this.frameInfo.elapsed > this.frameInfo.fpsInterval;
-	}
-	clearScreen(){
-		this.ctx.clearColor(0.0, 0.0, 0.0, 0.0);
+		GlUtils.setupCanvas(this, params);
 	}
 	render(){
 		if (this.active)
@@ -81,16 +18,13 @@ class CanvasWebgl{
 			}
 		}
 	}
-	destruct(){
-		this.active = false;
+	checkFrameInterval(){
+		this.frameInfo.now = Date.now();
+		this.frameInfo.elapsed = this.frameInfo.now - this.frameInfo.then;
+		return this.frameInfo.elapsed > this.frameInfo.fpsInterval;
 	}
-	hide(cb){
-		this.canvas.className = "canvas hide";
-		setTimeout(() => {
-			this.destruct();
-			if (cb)
-				cb();
-		}, 500);
+	clearScreen(){
+		this.ctx.clearColor(0.0, 0.0, 0.0, 0.0);
 	}
 	getFPS(){
 		if (this.frameInfo.elapsed !== 0)
@@ -100,6 +34,9 @@ class CanvasWebgl{
 			this.frameInfo.fpsRate += (frameFPS - this.frameInfo.fpsRate) / fpsFilter;
 		}
 		return this.frameInfo.fpsRate;
+	}
+	destruct(){
+		this.active = false;
 	}
 	getShader(gl, shaderObj) {
 		var shader;		
@@ -166,10 +103,7 @@ class CanvasWebgl{
 			if (this.loadedTextures === this.totalTextures)
 			{
 				this.render();
-				if (!this.hidden)
-					this.canvas.className = 'canvas';
-				else
-					this.canvas.className = 'canvas hide';
+				this.canvas.className = 'canvas';
 			}
 		};
 		if (object.texture.image.complete || object.texture.image.width+object.texture.image.height > 0)
@@ -189,7 +123,7 @@ class CanvasWebgl{
 			this.ctx.bindTexture(this.ctx.TEXTURE_2D, mesh.texture);
 			this.ctx.uniform1i(this.shaderProgram.samplerUniform, 0);
 			this.ctx.uniform1i(this.shaderProgram.hasTexure, true);
-			this.ctx.uniform2fv(this.shaderProgram.screenRatio, [1.0, this.screenRatio]);
+			this.ctx.uniform2fv(this.shaderProgram.screenRatio, [1.0, this.frameInfo.screenRatio]);
 			this.waveList.forEach((item, key) => {
 				this.ctx.uniform1i(this.shaderProgram.wave[key].hasShock, item.on);
 				this.ctx.uniform2fv(this.shaderProgram.wave[key].center, item.center);

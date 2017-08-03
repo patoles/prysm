@@ -91,7 +91,7 @@ window.addEventListener("load", function () {
 			var y = item.dataset.waveY && parseFloat(item.dataset.waveY);
 			var z = item.dataset.waveZ && parseFloat(item.dataset.waveZ);
 			var shockParams = [x || 10.1, y || 0.8, z || 0.1];
-			new Canvas3D({ parent: item, id: "canvas-wavify-" + key, hd: true, hide: false, texture: canvas.toDataURL("png"), waveParams: { shockParams: shockParams, speed: speed } });
+			new Canvas3D({ parent: item, id: "canvas-wavify-" + key, hd: true, texture: canvas.toDataURL("png"), waveParams: { shockParams: shockParams, speed: speed } });
 		});
 	});
 });
@@ -119,72 +119,10 @@ var CanvasWebgl = (function () {
 	function CanvasWebgl(params) {
 		_classCallCheck(this, CanvasWebgl);
 
-		this.frameInfo = {
-			fpsInterval: 0, startTime: 0, now: 0,
-			then: 0, elapsed: 0, fps: 60, fpsRate: 0
-		};
-		this.glUtils = new GlUtils();
-		this.waveParams = params.waveParams || { shockParams: [10.1, 0.8, 0.1], speed: 0.02 };
-		this.waveList = [];
-		this.initWaveList();
-		var app = params.parent || document.getElementById("main");
-		this.screenHeight = params.height || app.clientHeight;
-		this.screenWidth = params.width || app.clientWidth;
-		this.canvas = document.getElementById(params.id) || document.createElement("canvas");
-		this.active = true;
-		this.canvas.id = params.id;
-		this.canvas.className = "canvas hide";
-		this.canvas.height = this.screenHeight;
-		this.canvas.width = this.screenWidth;
-		this.ctx = this.glUtils.webgl_support(this.canvas);
-		this.hidden = params.hide;
-		this.ctx.viewport(0, 0, this.canvas.width, this.canvas.height);
-		this.ctx.font = "14px Arial";
-		this.ctx.fillStyle = "#ffffff";
-		this.ctx.imageSmoothingEnabled = true;
-		this.ctx.imageSmoothingQuality = "high";
-		this.oldWidth = this.canvas.width;
-		this.oldHeight = this.canvas.height;
-		if (params.hd) {
-			this.devicePixelRatio = window.devicePixelRatio || 1, this.backingStoreRatio = this.ctx.webkitBackingStorePixelRatio || this.ctx.mozBackingStorePixelRatio || this.ctx.msBackingStorePixelRatio || this.ctx.oBackingStorePixelRatio || this.ctx.backingStorePixelRatio || 1;
-			this.pixelRatio = this.devicePixelRatio / this.backingStoreRatio;
-			if (this.devicePixelRatio !== this.backingStoreRatio) {
-				this.canvas.width = this.oldWidth * this.pixelRatio;
-				this.canvas.height = this.oldHeight * this.pixelRatio;
-				this.canvas.style.width = this.oldWidth + "px";
-				this.canvas.style.height = this.oldHeight + "px";
-				this.ctx.viewport(0, 0, this.canvas.width, this.canvas.height);
-			}
-		}
-		this.screenRatio = this.canvas.height / this.canvas.width;
-		this.frameInfo.fpsInterval = 1000 / this.frameInfo.fps;
-		this.frameInfo.then = Date.now();
-		this.frameInfo.startTime = this.frameInfo.then;
-		this.shaderProgram = null;
-		this.clearScreen();
-		this.ctx.enable(this.ctx.DEPTH_TEST);
-		this.ctx.depthFunc(this.ctx.LEQUAL);
-		this.ctx.pixelStorei(this.ctx.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
-		this.ctx.clear(this.ctx.COLOR_BUFFER_BIT | this.ctx.DEPTH_BUFFER_BIT);
-		if (this.hidden) this.canvas.className = "canvas hide";
-		if (!document.getElementById(params.id)) app.appendChild(this.canvas);
-		this.initShaders();
-		this.initClick(this.canvas);
+		GlUtils.setupCanvas(this, params);
 	}
 
 	_createClass(CanvasWebgl, {
-		checkFrameInterval: {
-			value: function checkFrameInterval() {
-				this.frameInfo.now = Date.now();
-				this.frameInfo.elapsed = this.frameInfo.now - this.frameInfo.then;
-				return this.frameInfo.elapsed > this.frameInfo.fpsInterval;
-			}
-		},
-		clearScreen: {
-			value: function clearScreen() {
-				this.ctx.clearColor(0, 0, 0, 0);
-			}
-		},
 		render: {
 			value: function render() {
 				if (this.active) {
@@ -197,20 +135,16 @@ var CanvasWebgl = (function () {
 				}
 			}
 		},
-		destruct: {
-			value: function destruct() {
-				this.active = false;
+		checkFrameInterval: {
+			value: function checkFrameInterval() {
+				this.frameInfo.now = Date.now();
+				this.frameInfo.elapsed = this.frameInfo.now - this.frameInfo.then;
+				return this.frameInfo.elapsed > this.frameInfo.fpsInterval;
 			}
 		},
-		hide: {
-			value: function hide(cb) {
-				var _this = this;
-
-				this.canvas.className = "canvas hide";
-				setTimeout(function () {
-					_this.destruct();
-					if (cb) cb();
-				}, 500);
+		clearScreen: {
+			value: function clearScreen() {
+				this.ctx.clearColor(0, 0, 0, 0);
 			}
 		},
 		getFPS: {
@@ -221,6 +155,11 @@ var CanvasWebgl = (function () {
 					this.frameInfo.fpsRate += (frameFPS - this.frameInfo.fpsRate) / fpsFilter;
 				}
 				return this.frameInfo.fpsRate;
+			}
+		},
+		destruct: {
+			value: function destruct() {
+				this.active = false;
 			}
 		},
 		getShader: {
@@ -294,7 +233,7 @@ var CanvasWebgl = (function () {
 					_this.loadedTextures++;
 					if (_this.loadedTextures === _this.totalTextures) {
 						_this.render();
-						if (!_this.hidden) _this.canvas.className = "canvas";else _this.canvas.className = "canvas hide";
+						_this.canvas.className = "canvas";
 					}
 				};
 				if (object.texture.image.complete || object.texture.image.width + object.texture.image.height > 0) action();else object.texture.image.addEventListener("load", function (event) {
@@ -316,7 +255,7 @@ var CanvasWebgl = (function () {
 					this.ctx.bindTexture(this.ctx.TEXTURE_2D, mesh.texture);
 					this.ctx.uniform1i(this.shaderProgram.samplerUniform, 0);
 					this.ctx.uniform1i(this.shaderProgram.hasTexure, true);
-					this.ctx.uniform2fv(this.shaderProgram.screenRatio, [1, this.screenRatio]);
+					this.ctx.uniform2fv(this.shaderProgram.screenRatio, [1, this.frameInfo.screenRatio]);
 					this.waveList.forEach(function (item, key) {
 						_this.ctx.uniform1i(_this.shaderProgram.wave[key].hasShock, item.on);
 						_this.ctx.uniform2fv(_this.shaderProgram.wave[key].center, item.center);
@@ -387,9 +326,12 @@ var Canvas3D = (function (_CanvasWebgl) {
 		_classCallCheck(this, Canvas3D);
 
 		_get(Object.getPrototypeOf(Canvas3D.prototype), "constructor", this).call(this, params);
+		this.waveParams = params.waveParams || { shockParams: [10.1, 0.8, 0.1], speed: 0.02 };
+		this.waveList = [];
+		this.initWaveList();
+		this.initClick(this.canvas);
 		this.lastTouchTime = -1;
 		this.meshes;
-		this.hd = params.hd;
 		this.getConf(function () {
 			_this.totalTextures = 0;
 			_this.loadedTextures = 0;
@@ -512,8 +454,8 @@ var Canvas3D = (function (_CanvasWebgl) {
 		},
 		setWavePos: {
 			value: function setWavePos(x, y) {
-				var ratioPosX = x / this.oldWidth;
-				var ratioPosY = 1 - y / this.oldHeight;
+				var ratioPosX = x / this.realWidth;
+				var ratioPosY = 1 - y / this.realHeight;
 				var waveId = -1;
 				this.waveList.forEach(function (item, key) {
 					if (!item.on && waveId === -1) waveId = key;
@@ -549,6 +491,53 @@ var GlUtils = (function () {
 	}
 
 	_createClass(GlUtils, {
+		setupCanvas: {
+			value: function setupCanvas(self, params) {
+				var parent = params.parent;
+				self.active = true;
+				var frameInfo = {
+					fpsInterval: 0, startTime: 0, now: 0,
+					then: 0, elapsed: 0, fps: 60, fpsRate: 0, screenRatio: 1
+				};
+				var canvas = document.getElementById(params.id) || document.createElement("canvas");
+				canvas.id = params.id;
+				canvas.className = "canvas hide";
+				canvas.height = parent.clientHeight;
+				canvas.width = parent.clientWidth;
+				var ctx = this.webgl_support(canvas);
+				ctx.viewport(0, 0, canvas.width, canvas.height);
+				ctx.imageSmoothingEnabled = true;
+				ctx.imageSmoothingQuality = "high";
+				self.realWidth = canvas.width;
+				self.realHeight = canvas.height;
+				if (params.hd) {
+					var devicePixelRatio = window.devicePixelRatio || 1;
+					var backingStoreRatio = ctx.webkitBackingStorePixelRatio || ctx.mozBackingStorePixelRatio || ctx.msBackingStorePixelRatio || ctx.oBackingStorePixelRatio || ctx.backingStorePixelRatio || 1;
+					var pixelRatio = devicePixelRatio / backingStoreRatio;
+					if (devicePixelRatio !== backingStoreRatio) {
+						canvas.width = self.realWidth * pixelRatio;
+						canvas.height = self.realHeight * pixelRatio;
+						canvas.style.width = self.realWidth + "px";
+						canvas.style.height = self.realHeight + "px";
+						ctx.viewport(0, 0, canvas.width, canvas.height);
+					}
+				}
+				frameInfo.screenRatio = canvas.height / canvas.width;
+				frameInfo.fpsInterval = 1000 / frameInfo.fps;
+				frameInfo.then = Date.now();
+				frameInfo.startTime = frameInfo.then;
+				ctx.clearColor(0, 0, 0, 0);
+				ctx.enable(ctx.DEPTH_TEST);
+				ctx.depthFunc(ctx.LEQUAL);
+				ctx.pixelStorei(ctx.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
+				ctx.clear(ctx.COLOR_BUFFER_BIT | ctx.DEPTH_BUFFER_BIT);
+				if (!document.getElementById(params.id)) parent.appendChild(canvas);
+				self.frameInfo = frameInfo;
+				self.canvas = canvas;
+				self.ctx = ctx;
+				self.shaderProgram = null;
+			}
+		},
 		webgl_support: {
 			value: function webgl_support(canvas) {
 				try {
@@ -563,7 +552,9 @@ var GlUtils = (function () {
 	return GlUtils;
 })();
 
-module.exports = GlUtils;
+var _GlUtils = new GlUtils();
+
+module.exports = _GlUtils;
 
 /***/ }),
 /* 4 */
