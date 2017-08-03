@@ -49,7 +49,6 @@ class CanvasWebgl{
 		this.frameInfo.then = Date.now();
 		this.frameInfo.startTime = this.frameInfo.then;
 		this.shaderProgram = null;
-		this.perspectiveMatrix;
 		this.clearScreen();
 		this.ctx.enable(this.ctx.DEPTH_TEST);
 		this.ctx.depthFunc(this.ctx.LEQUAL);
@@ -205,7 +204,6 @@ class CanvasWebgl{
 			this.ctx.uniform4fv(this.shaderProgram.modelColor, color);
 		}
 		this.ctx.bindBuffer(this.ctx.ELEMENT_ARRAY_BUFFER, mesh.indexBuffer);
-		this.glUtils.setMatrixUniforms(this.ctx, this.shaderProgram, this.perspectiveMatrix);
 		this.ctx.drawElements(this.ctx.TRIANGLES, mesh.indexBuffer.numItems, this.ctx.UNSIGNED_SHORT, 0);
 	}
 }

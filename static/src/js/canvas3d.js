@@ -26,8 +26,6 @@ var objPool = null;
 class Canvas3D extends CanvasWebgl{
 	constructor(params){
 		super(params);
-		this.yRotation = 0;
-		this.xRotation = 0;
 		this.lastTouchTime = -1;
 		this.meshes;
 		this.hd = params.hd;
@@ -90,18 +88,8 @@ class Canvas3D extends CanvasWebgl{
 	}
 	draw(){
 		this.ctx.clear(this.ctx.COLOR_BUFFER_BIT | this.ctx.DEPTH_BUFFER_BIT);
-		this.perspectiveMatrix = this.glUtils.makePerspective(perspectiveValue, this.screenWidth/this.screenHeight, 0.1, 100.0);
-		this.glUtils.loadIdentity();
 		this.meshList.forEach((item, key) => {
-			this.glUtils.mvPushMatrix();
-			this.glUtils.mvRotateMultiple(this.xRotation, [1,0,0], this.yRotation, [0,1,0]);
-			this.glUtils.mvTranslate(item.translation);
-			if (item.scale)
-				this.glUtils.mvScale([item.scale[0],item.scale[1],item.scale[2]]);
-			if (item.objName === 'sphere' || item.objName === 'cube')
-				this.glUtils.mvRotateMultiple(this.ballRotation, [1,0,0], this.ballRotation, [0,1,0]);
 			this.drawObject(this.meshes[item.name], item.color || [0.5, 1.0, 1.0, 1.0]);
-			this.glUtils.mvPopMatrix();
 		});
 		this.transform();
 	}
