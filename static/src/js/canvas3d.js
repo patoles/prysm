@@ -1,81 +1,41 @@
 import CanvasWebgl from './canvas-webgl';
-import OBJ from 'webgl-obj-loader';
-
-const perspectiveValue = 80;
-const WAVE_LIST_SIZE = 2;
-const WAVE_LIFESPAN = 1.5;
-
-const meshesConf = {
-	"meshes":[
-		{
-			"name":"cube",
-			"obj":"/static/assets/models/plan.obj",
-			"objName":"plan",
-			"texture":"",
-			"translation":[0.0, 0.0, 0.0],
-			"color":[0.6, 0.6, 0.4, 1.0]
-		}
-	]
-}
-
-var objList = {
-	plan:"/static/assets/models/plan.obj"
-};
-var objPool = null;
+import GlUtils from './gl-utils.js';
+import fgShader from './shaders/shader-fs';
+import vcShader from './shaders/shader-vs';
 
 class Canvas3D extends CanvasWebgl{
 	constructor(params){
 		super(params);
-		this.waveParams = params.waveParams || {shockParams:[10.1,0.8,0.1], speed:0.02};
+		/* INIT WAVE */
+		this.WAVE_LIST_SIZE = 2;
+		this.WAVE_LIFESPAN = 1.5;
+		var parent = params.parent;
+		var speed = (parent.dataset.waveSpeed && parseFloat(parent.dataset.waveSpeed)) || 0.02;
+		var x = parent.dataset.waveX && parseFloat(parent.dataset.waveX);
+		var y = parent.dataset.waveY && parseFloat(parent.dataset.waveY);
+		var z = parent.dataset.waveZ && parseFloat(parent.dataset.waveZ);
+		var shockParams = [x || 10.1, y || 0.8, z || 0.1];
+		this.waveParams = {shockParams, speed};
 		this.waveList = [];
 		this.initWaveList();
+		/* END INIT WAVE */
 		this.initClick(this.canvas);
 		this.lastTouchTime = -1;
-		this.meshes;
-		this.getConf(() => {
-			this.totalTextures = 0;
-			this.loadedTextures = 0;
-			this.meshList.forEach((item, key) => {
-				if (item.texture !== "")
-					this.totalTextures++;
-			});
-			var downloadObject = {};
-			var bufferList = [];
-			this.meshList.forEach((item, key) => {
-				downloadObject[item.name] = item.obj;
-				if (item.clickable)
-					bufferList.push(item);
-			});
-			this.initShaders();
-			if (!objPool)
-				OBJ.downloadMeshes(objList, this.objStart.bind(this));
-			else
-				this.objStart(objPool);
-		}, params.texture);
-	}
-	getConf(cb, texture){
-		this.meshList = JSON.parse(JSON.stringify(meshesConf.meshes));
-		this.meshList[0].texture = texture;
-		cb();
-	}
-	objStart(meshes){
-		objPool = meshes;
 		this.meshes = {};
+		this.meshList = [{name:'plan', texture:params.texture}];
+		this.initShaders(fgShader, vcShader);
+		var meshObj = {"plan":{"vertices":[-1,-1,0,1,-1,0,1,1,0,-1,1,0],"vertexNormals":[0,0,1,0,0,1,0,0,1,0,0,1],"textures":[0,0,0,1,0,0,1,1],"indices":[0,1,2,0,2,3]}};
+		this.objStart(meshObj);
+	}
+	objStart(meshObj){
 		this.meshList.forEach((item, key) => {
 			this.meshes[item.name] = [];
-			for (var mesh in objPool[item.objName])
-				this.meshes[item.name][mesh] = objPool[item.objName][mesh];
-		});
-		this.meshList.forEach((item, key) => {
-			OBJ.initMeshBuffers(this.ctx, this.meshes[item.name]);
+			for (var mesh in meshObj[item.name])
+				this.meshes[item.name][mesh] = meshObj[item.name][mesh];
+			GlUtils.initMeshBuffers(this.ctx, this.meshes[item.name]);
 			if (this.meshes[item.name].textures.length && item.texture !== '')
 				this.initTexture(this.meshes[item.name], item.texture);
 		});
-		if (this.totalTextures === 0)
-		{
-			this.render();
-			this.canvas.className = 'canvas';
-		}
 	}
 	updateTexture(object, url){
 		object.texture = this.ctx.createTexture();
@@ -92,7 +52,7 @@ class Canvas3D extends CanvasWebgl{
 	draw(){
 		this.ctx.clear(this.ctx.COLOR_BUFFER_BIT | this.ctx.DEPTH_BUFFER_BIT);
 		this.meshList.forEach((item, key) => {
-			this.drawObject(this.meshes[item.name], item.color || [0.5, 1.0, 1.0, 1.0]);
+			this.drawObject(this.meshes[item.name], [1.0, 1.0, 1.0, 1.0]);
 		});
 		this.transform();
 	}
@@ -101,7 +61,7 @@ class Canvas3D extends CanvasWebgl{
 			if (item.on)
 			{
 				item.time += item.speed;
-				if (item.time > WAVE_LIFESPAN)
+				if (item.time > this.WAVE_LIFESPAN)
 				{
 					item.on = false;
 					item.center = [0,0];
@@ -113,7 +73,7 @@ class Canvas3D extends CanvasWebgl{
 	initWaveList(){
 		var shockParams = this.waveParams.shockParams;
 		var speed = this.waveParams.speed;
-		for (var x = 0;x < WAVE_LIST_SIZE;x++)
+		for (var x = 0;x < this.WAVE_LIST_SIZE;x++)
 			this.waveList.push({time:0, center:[0, 0], on:false, shockParams, speed});
 	}
 	initClick(target){

@@ -1,6 +1,4 @@
 import GlUtils from './gl-utils.js';
-import fgShader from './shaders/shader-fs';
-import vcShader from './shaders/shader-vs';
 
 class CanvasWebgl{
 	constructor(params){
@@ -54,7 +52,7 @@ class CanvasWebgl{
 		}
 		return shader;
 	}
-	initShaders(){
+	initShaders(fgShader, vcShader){
 		var fragmentShader = this.getShader(this.ctx, fgShader);
 		var vertexShader = this.getShader(this.ctx, vcShader);
 		this.shaderProgram = this.ctx.createProgram();
@@ -99,12 +97,8 @@ class CanvasWebgl{
 		object.texture.image.src = url;
 		var action = () => {
 			this.handleLoadedTexture(object.texture);
-			this.loadedTextures++;
-			if (this.loadedTextures === this.totalTextures)
-			{
-				this.render();
-				this.canvas.className = 'canvas';
-			}
+			this.render();
+			this.canvas.className = 'canvas';
 		};
 		if (object.texture.image.complete || object.texture.image.width+object.texture.image.height > 0)
 			action();

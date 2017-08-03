@@ -73,31 +73,119 @@
 "use strict";
 
 
-var _interopRequire = function (obj) { return obj && obj.__esModule ? obj["default"] : obj; };
+var _createClass = (function () { function defineProperties(target, props) { for (var key in props) { var prop = props[key]; prop.configurable = true; if (prop.value) prop.writable = true; } Object.defineProperties(target, props); } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
 
-var html2canvas = _interopRequire(__webpack_require__(6));
+var _classCallCheck = function (instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } };
 
-var Canvas3D = _interopRequire(__webpack_require__(2));
+var GlUtils = (function () {
+	function GlUtils() {
+		_classCallCheck(this, GlUtils);
+	}
 
-window.addEventListener("load", function () {
-	var waveItemList = document.getElementsByClassName("wavify");
-	[].forEach.call(waveItemList, function (item, key) {
-		var positionStyle = getComputedStyle(item).position;
-		if (positionStyle === "static" || positionStyle === "") item.style.position = "relative";
-		html2canvas(item).then(function (canvas) {
-			item.style.border = "none";
-			var speed = item.dataset.waveSpeed && parseFloat(item.dataset.waveSpeed) || 0.02;
-			var x = item.dataset.waveX && parseFloat(item.dataset.waveX);
-			var y = item.dataset.waveY && parseFloat(item.dataset.waveY);
-			var z = item.dataset.waveZ && parseFloat(item.dataset.waveZ);
-			var shockParams = [x || 10.1, y || 0.8, z || 0.1];
-			new Canvas3D({ parent: item, id: "canvas-wavify-" + key, hd: true, texture: canvas.toDataURL("png"), waveParams: { shockParams: shockParams, speed: speed } });
-		});
+	_createClass(GlUtils, {
+		setupCanvas: {
+			value: function setupCanvas(self, params) {
+				var parent = params.parent;
+				self.active = true;
+				var frameInfo = {
+					fpsInterval: 0, startTime: 0, now: 0,
+					then: 0, elapsed: 0, fps: 60, fpsRate: 0, screenRatio: 1
+				};
+				var canvas = document.getElementById(params.id) || document.createElement("canvas");
+				canvas.id = params.id;
+				canvas.className = "canvas hide";
+				canvas.height = parent.clientHeight;
+				canvas.width = parent.clientWidth;
+				var ctx = this.webgl_support(canvas);
+				ctx.viewport(0, 0, canvas.width, canvas.height);
+				ctx.imageSmoothingEnabled = true;
+				ctx.imageSmoothingQuality = "high";
+				self.realWidth = canvas.width;
+				self.realHeight = canvas.height;
+				if (params.hd) {
+					var devicePixelRatio = window.devicePixelRatio || 1;
+					var backingStoreRatio = ctx.webkitBackingStorePixelRatio || ctx.mozBackingStorePixelRatio || ctx.msBackingStorePixelRatio || ctx.oBackingStorePixelRatio || ctx.backingStorePixelRatio || 1;
+					var pixelRatio = devicePixelRatio / backingStoreRatio;
+					if (devicePixelRatio !== backingStoreRatio) {
+						canvas.width = self.realWidth * pixelRatio;
+						canvas.height = self.realHeight * pixelRatio;
+						canvas.style.width = self.realWidth + "px";
+						canvas.style.height = self.realHeight + "px";
+						ctx.viewport(0, 0, canvas.width, canvas.height);
+					}
+				}
+				frameInfo.screenRatio = canvas.height / canvas.width;
+				frameInfo.fpsInterval = 1000 / frameInfo.fps;
+				frameInfo.then = Date.now();
+				frameInfo.startTime = frameInfo.then;
+				ctx.clearColor(0, 0, 0, 0);
+				ctx.enable(ctx.DEPTH_TEST);
+				ctx.depthFunc(ctx.LEQUAL);
+				ctx.pixelStorei(ctx.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
+				ctx.clear(ctx.COLOR_BUFFER_BIT | ctx.DEPTH_BUFFER_BIT);
+				if (!document.getElementById(params.id)) parent.appendChild(canvas);
+				self.frameInfo = frameInfo;
+				self.canvas = canvas;
+				self.ctx = ctx;
+				self.shaderProgram = null;
+			}
+		},
+		initMeshBuffers: {
+			value: function initMeshBuffers(gl, mesh) {
+				mesh.normalBuffer = this.buildBuffer(gl, gl.ARRAY_BUFFER, mesh.vertexNormals, 3);
+				mesh.textureBuffer = this.buildBuffer(gl, gl.ARRAY_BUFFER, mesh.textures, 2);
+				mesh.vertexBuffer = this.buildBuffer(gl, gl.ARRAY_BUFFER, mesh.vertices, 3);
+				mesh.indexBuffer = this.buildBuffer(gl, gl.ELEMENT_ARRAY_BUFFER, mesh.indices, 1);
+			}
+		},
+		buildBuffer: {
+			value: function buildBuffer(gl, type, data, itemSize) {
+				var buffer = gl.createBuffer();
+				var arrayView = type === gl.ARRAY_BUFFER ? Float32Array : Uint16Array;
+				gl.bindBuffer(type, buffer);
+				gl.bufferData(type, new arrayView(data), gl.STATIC_DRAW);
+				buffer.itemSize = itemSize;
+				buffer.numItems = data.length / itemSize;
+				return buffer;
+			}
+		},
+		webgl_support: {
+			value: function webgl_support(canvas) {
+				try {
+					return !!window.WebGLRenderingContext && (canvas.getContext("webgl") || canvas.getContext("experimental-webgl"));
+				} catch (e) {
+					return false;
+				}
+			}
+		}
 	});
-});
+
+	return GlUtils;
+})();
+
+var _GlUtils = new GlUtils();
+
+module.exports = _GlUtils;
 
 /***/ }),
 /* 1 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var _interopRequire = function (obj) { return obj && obj.__esModule ? obj["default"] : obj; };
+
+var Shapeshift = _interopRequire(__webpack_require__(6));
+
+window.addEventListener("load", function () {
+	var item = document.getElementsByClassName("wavify")[0];
+	new Shapeshift(item);
+	//	new Shapeshift('wavify');
+});
+
+/***/ }),
+/* 2 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -109,11 +197,7 @@ var _createClass = (function () { function defineProperties(target, props) { for
 
 var _classCallCheck = function (instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } };
 
-var GlUtils = _interopRequire(__webpack_require__(3));
-
-var fgShader = _interopRequire(__webpack_require__(4));
-
-var vcShader = _interopRequire(__webpack_require__(5));
+var GlUtils = _interopRequire(__webpack_require__(0));
 
 var CanvasWebgl = (function () {
 	function CanvasWebgl(params) {
@@ -177,7 +261,7 @@ var CanvasWebgl = (function () {
 			}
 		},
 		initShaders: {
-			value: function initShaders() {
+			value: function initShaders(fgShader, vcShader) {
 				var _this = this;
 
 				var fragmentShader = this.getShader(this.ctx, fgShader);
@@ -230,11 +314,8 @@ var CanvasWebgl = (function () {
 				object.texture.image.src = url;
 				var action = function () {
 					_this.handleLoadedTexture(object.texture);
-					_this.loadedTextures++;
-					if (_this.loadedTextures === _this.totalTextures) {
-						_this.render();
-						_this.canvas.className = "canvas";
-					}
+					_this.render();
+					_this.canvas.className = "canvas";
 				};
 				if (object.texture.image.complete || object.texture.image.width + object.texture.image.height > 0) action();else object.texture.image.addEventListener("load", function (event) {
 					action();
@@ -279,7 +360,7 @@ var CanvasWebgl = (function () {
 module.exports = CanvasWebgl;
 
 /***/ }),
-/* 2 */
+/* 3 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -295,88 +376,54 @@ var _inherits = function (subClass, superClass) { if (typeof superClass !== "fun
 
 var _classCallCheck = function (instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } };
 
-var CanvasWebgl = _interopRequire(__webpack_require__(1));
+var CanvasWebgl = _interopRequire(__webpack_require__(2));
 
-var OBJ = _interopRequire(__webpack_require__(7));
+var GlUtils = _interopRequire(__webpack_require__(0));
 
-var perspectiveValue = 80;
-var WAVE_LIST_SIZE = 2;
-var WAVE_LIFESPAN = 1.5;
+var fgShader = _interopRequire(__webpack_require__(4));
 
-var meshesConf = {
-	meshes: [{
-		name: "cube",
-		obj: "/static/assets/models/plan.obj",
-		objName: "plan",
-		texture: "",
-		translation: [0, 0, 0],
-		color: [0.6, 0.6, 0.4, 1]
-	}]
-};
-
-var objList = {
-	plan: "/static/assets/models/plan.obj"
-};
-var objPool = null;
+var vcShader = _interopRequire(__webpack_require__(5));
 
 var Canvas3D = (function (_CanvasWebgl) {
 	function Canvas3D(params) {
-		var _this = this;
-
 		_classCallCheck(this, Canvas3D);
 
 		_get(Object.getPrototypeOf(Canvas3D.prototype), "constructor", this).call(this, params);
-		this.waveParams = params.waveParams || { shockParams: [10.1, 0.8, 0.1], speed: 0.02 };
+		/* INIT WAVE */
+		this.WAVE_LIST_SIZE = 2;
+		this.WAVE_LIFESPAN = 1.5;
+		var parent = params.parent;
+		var speed = parent.dataset.waveSpeed && parseFloat(parent.dataset.waveSpeed) || 0.02;
+		var x = parent.dataset.waveX && parseFloat(parent.dataset.waveX);
+		var y = parent.dataset.waveY && parseFloat(parent.dataset.waveY);
+		var z = parent.dataset.waveZ && parseFloat(parent.dataset.waveZ);
+		var shockParams = [x || 10.1, y || 0.8, z || 0.1];
+		this.waveParams = { shockParams: shockParams, speed: speed };
 		this.waveList = [];
 		this.initWaveList();
+		/* END INIT WAVE */
 		this.initClick(this.canvas);
 		this.lastTouchTime = -1;
-		this.meshes;
-		this.getConf(function () {
-			_this.totalTextures = 0;
-			_this.loadedTextures = 0;
-			_this.meshList.forEach(function (item, key) {
-				if (item.texture !== "") _this.totalTextures++;
-			});
-			var downloadObject = {};
-			var bufferList = [];
-			_this.meshList.forEach(function (item, key) {
-				downloadObject[item.name] = item.obj;
-				if (item.clickable) bufferList.push(item);
-			});
-			_this.initShaders();
-			if (!objPool) OBJ.downloadMeshes(objList, _this.objStart.bind(_this));else _this.objStart(objPool);
-		}, params.texture);
+		this.meshes = {};
+		this.meshList = [{ name: "plan", texture: params.texture }];
+		this.initShaders(fgShader, vcShader);
+		var meshObj = { plan: { vertices: [-1, -1, 0, 1, -1, 0, 1, 1, 0, -1, 1, 0], vertexNormals: [0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1], textures: [0, 0, 0, 1, 0, 0, 1, 1], indices: [0, 1, 2, 0, 2, 3] } };
+		this.objStart(meshObj);
 	}
 
 	_inherits(Canvas3D, _CanvasWebgl);
 
 	_createClass(Canvas3D, {
-		getConf: {
-			value: function getConf(cb, texture) {
-				this.meshList = JSON.parse(JSON.stringify(meshesConf.meshes));
-				this.meshList[0].texture = texture;
-				cb();
-			}
-		},
 		objStart: {
-			value: function objStart(meshes) {
+			value: function objStart(meshObj) {
 				var _this = this;
 
-				objPool = meshes;
-				this.meshes = {};
 				this.meshList.forEach(function (item, key) {
 					_this.meshes[item.name] = [];
-					for (var mesh in objPool[item.objName]) _this.meshes[item.name][mesh] = objPool[item.objName][mesh];
-				});
-				this.meshList.forEach(function (item, key) {
-					OBJ.initMeshBuffers(_this.ctx, _this.meshes[item.name]);
+					for (var mesh in meshObj[item.name]) _this.meshes[item.name][mesh] = meshObj[item.name][mesh];
+					GlUtils.initMeshBuffers(_this.ctx, _this.meshes[item.name]);
 					if (_this.meshes[item.name].textures.length && item.texture !== "") _this.initTexture(_this.meshes[item.name], item.texture);
 				});
-				if (this.totalTextures === 0) {
-					this.render();
-					this.canvas.className = "canvas";
-				}
 			}
 		},
 		updateTexture: {
@@ -403,17 +450,19 @@ var Canvas3D = (function (_CanvasWebgl) {
 
 				this.ctx.clear(this.ctx.COLOR_BUFFER_BIT | this.ctx.DEPTH_BUFFER_BIT);
 				this.meshList.forEach(function (item, key) {
-					_this.drawObject(_this.meshes[item.name], item.color || [0.5, 1, 1, 1]);
+					_this.drawObject(_this.meshes[item.name], [1, 1, 1, 1]);
 				});
 				this.transform();
 			}
 		},
 		transform: {
 			value: function transform() {
+				var _this = this;
+
 				this.waveList.forEach(function (item) {
 					if (item.on) {
 						item.time += item.speed;
-						if (item.time > WAVE_LIFESPAN) {
+						if (item.time > _this.WAVE_LIFESPAN) {
 							item.on = false;
 							item.center = [0, 0];
 							item.time = 0;
@@ -426,7 +475,7 @@ var Canvas3D = (function (_CanvasWebgl) {
 			value: function initWaveList() {
 				var shockParams = this.waveParams.shockParams;
 				var speed = this.waveParams.speed;
-				for (var x = 0; x < WAVE_LIST_SIZE; x++) this.waveList.push({ time: 0, center: [0, 0], on: false, shockParams: shockParams, speed: speed });
+				for (var x = 0; x < this.WAVE_LIST_SIZE; x++) this.waveList.push({ time: 0, center: [0, 0], on: false, shockParams: shockParams, speed: speed });
 			}
 		},
 		initClick: {
@@ -475,88 +524,6 @@ var Canvas3D = (function (_CanvasWebgl) {
 module.exports = Canvas3D;
 
 /***/ }),
-/* 3 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var _createClass = (function () { function defineProperties(target, props) { for (var key in props) { var prop = props[key]; prop.configurable = true; if (prop.value) prop.writable = true; } Object.defineProperties(target, props); } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
-
-var _classCallCheck = function (instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } };
-
-var GlUtils = (function () {
-	function GlUtils() {
-		_classCallCheck(this, GlUtils);
-	}
-
-	_createClass(GlUtils, {
-		setupCanvas: {
-			value: function setupCanvas(self, params) {
-				var parent = params.parent;
-				self.active = true;
-				var frameInfo = {
-					fpsInterval: 0, startTime: 0, now: 0,
-					then: 0, elapsed: 0, fps: 60, fpsRate: 0, screenRatio: 1
-				};
-				var canvas = document.getElementById(params.id) || document.createElement("canvas");
-				canvas.id = params.id;
-				canvas.className = "canvas hide";
-				canvas.height = parent.clientHeight;
-				canvas.width = parent.clientWidth;
-				var ctx = this.webgl_support(canvas);
-				ctx.viewport(0, 0, canvas.width, canvas.height);
-				ctx.imageSmoothingEnabled = true;
-				ctx.imageSmoothingQuality = "high";
-				self.realWidth = canvas.width;
-				self.realHeight = canvas.height;
-				if (params.hd) {
-					var devicePixelRatio = window.devicePixelRatio || 1;
-					var backingStoreRatio = ctx.webkitBackingStorePixelRatio || ctx.mozBackingStorePixelRatio || ctx.msBackingStorePixelRatio || ctx.oBackingStorePixelRatio || ctx.backingStorePixelRatio || 1;
-					var pixelRatio = devicePixelRatio / backingStoreRatio;
-					if (devicePixelRatio !== backingStoreRatio) {
-						canvas.width = self.realWidth * pixelRatio;
-						canvas.height = self.realHeight * pixelRatio;
-						canvas.style.width = self.realWidth + "px";
-						canvas.style.height = self.realHeight + "px";
-						ctx.viewport(0, 0, canvas.width, canvas.height);
-					}
-				}
-				frameInfo.screenRatio = canvas.height / canvas.width;
-				frameInfo.fpsInterval = 1000 / frameInfo.fps;
-				frameInfo.then = Date.now();
-				frameInfo.startTime = frameInfo.then;
-				ctx.clearColor(0, 0, 0, 0);
-				ctx.enable(ctx.DEPTH_TEST);
-				ctx.depthFunc(ctx.LEQUAL);
-				ctx.pixelStorei(ctx.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
-				ctx.clear(ctx.COLOR_BUFFER_BIT | ctx.DEPTH_BUFFER_BIT);
-				if (!document.getElementById(params.id)) parent.appendChild(canvas);
-				self.frameInfo = frameInfo;
-				self.canvas = canvas;
-				self.ctx = ctx;
-				self.shaderProgram = null;
-			}
-		},
-		webgl_support: {
-			value: function webgl_support(canvas) {
-				try {
-					return !!window.WebGLRenderingContext && (canvas.getContext("webgl") || canvas.getContext("experimental-webgl"));
-				} catch (e) {
-					return false;
-				}
-			}
-		}
-	});
-
-	return GlUtils;
-})();
-
-var _GlUtils = new GlUtils();
-
-module.exports = _GlUtils;
-
-/***/ }),
 /* 4 */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -580,6 +547,42 @@ module.exports = {
 
 /***/ }),
 /* 6 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var _interopRequire = function (obj) { return obj && obj.__esModule ? obj["default"] : obj; };
+
+var _classCallCheck = function (instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } };
+
+var html2canvas = _interopRequire(__webpack_require__(7));
+
+var Canvas3D = _interopRequire(__webpack_require__(3));
+
+var Shapeshift = function Shapeshift(targetClass) {
+  _classCallCheck(this, Shapeshift);
+
+  var action = function (item) {
+    var positionStyle = getComputedStyle(item).position;
+    if (positionStyle === "static" || positionStyle === "") item.style.position = "relative";
+    html2canvas(item).then(function (canvas) {
+      item.style.border = "none";
+      new Canvas3D({ parent: item, id: "canvas-wavify-" + Date.now(), hd: true, texture: canvas.toDataURL("png") });
+    });
+  };
+  if (typeof targetClass === "string") {
+    var itemList = document.getElementsByClassName(targetClass);
+    [].forEach.call(itemList, function (key) {
+      action(item);
+    });
+  } else action(targetClass);
+};
+
+module.exports = Shapeshift;
+
+/***/ }),
+/* 7 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(global) {var require;var require;/*
@@ -4130,388 +4133,6 @@ module.exports = XHR;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(8)))
 
 /***/ }),
-/* 7 */
-/***/ (function(module, exports, __webpack_require__) {
-
-(function (undefined) {
-  'use strict';
-
-  var OBJ = {};
-
-  if (true) {
-    module.exports = OBJ;
-  } else {
-    window.OBJ = OBJ;
-  }
-
-  /**
-   * The main Mesh class. The constructor will parse through the OBJ file data
-   * and collect the vertex, vertex normal, texture, and face information. This
-   * information can then be used later on when creating your VBOs. See
-   * OBJ.initMeshBuffers for an example of how to use the newly created Mesh
-   *
-   * @class Mesh
-   * @constructor
-   *
-   * @param {String} objectData a string representation of an OBJ file with newlines preserved.
-   */
-  OBJ.Mesh = function (objectData) {
-    /*
-     The OBJ file format does a sort of compression when saving a model in a
-     program like Blender. There are at least 3 sections (4 including textures)
-     within the file. Each line in a section begins with the same string:
-       * 'v': indicates vertex section
-       * 'vn': indicates vertex normal section
-       * 'f': indicates the faces section
-       * 'vt': indicates vertex texture section (if textures were used on the model)
-     Each of the above sections (except for the faces section) is a list/set of
-     unique vertices.
-
-     Each line of the faces section contains a list of
-     (vertex, [texture], normal) groups
-     Some examples:
-         // the texture index is optional, both formats are possible for models
-         // without a texture applied
-         f 1/25 18/46 12/31
-         f 1//25 18//46 12//31
-
-         // A 3 vertex face with texture indices
-         f 16/92/11 14/101/22 1/69/1
-
-         // A 4 vertex face
-         f 16/92/11 40/109/40 38/114/38 14/101/22
-
-     The first two lines are examples of a 3 vertex face without a texture applied.
-     The second is an example of a 3 vertex face with a texture applied.
-     The third is an example of a 4 vertex face. Note: a face can contain N
-     number of vertices.
-
-     Each number that appears in one of the groups is a 1-based index
-     corresponding to an item from the other sections (meaning that indexing
-     starts at one and *not* zero).
-
-     For example:
-         `f 16/92/11` is saying to
-           - take the 16th element from the [v] vertex array
-           - take the 92nd element from the [vt] texture array
-           - take the 11th element from the [vn] normal array
-         and together they make a unique vertex.
-     Using all 3+ unique Vertices from the face line will produce a polygon.
-
-     Now, you could just go through the OBJ file and create a new vertex for
-     each face line and WebGL will draw what appears to be the same model.
-     However, vertices will be overlapped and duplicated all over the place.
-
-     Consider a cube in 3D space centered about the origin and each side is
-     2 units long. The front face (with the positive Z-axis pointing towards
-     you) would have a Top Right vertex (looking orthogonal to its normal)
-     mapped at (1,1,1) The right face would have a Top Left vertex (looking
-     orthogonal to its normal) at (1,1,1) and the top face would have a Bottom
-     Right vertex (looking orthogonal to its normal) at (1,1,1). Each face
-     has a vertex at the same coordinates, however, three distinct vertices
-     will be drawn at the same spot.
-
-     To solve the issue of duplicate Vertices (the `(vertex, [texture], normal)`
-     groups), while iterating through the face lines, when a group is encountered
-     the whole group string ('16/92/11') is checked to see if it exists in the
-     packed.hashindices object, and if it doesn't, the indices it specifies
-     are used to look up each attribute in the corresponding attribute arrays
-     already created. The values are then copied to the corresponding unpacked
-     array (flattened to play nice with WebGL's ELEMENT_ARRAY_BUFFER indexing),
-     the group string is added to the hashindices set and the current unpacked
-     index is used as this hashindices value so that the group of elements can
-     be reused. The unpacked index is incremented. If the group string already
-     exists in the hashindices object, its corresponding value is the index of
-     that group and is appended to the unpacked indices array.
-     */
-    var verts = [], vertNormals = [], textures = [], unpacked = {};
-    // unpacking stuff
-    unpacked.verts = [];
-    unpacked.norms = [];
-    unpacked.textures = [];
-    unpacked.hashindices = {};
-    unpacked.indices = [];
-    unpacked.index = 0;
-    // array of lines separated by the newline
-    var lines = objectData.split('\n');
-    
-    var VERTEX_RE = /^v\s/;
-    var NORMAL_RE = /^vn\s/;
-    var TEXTURE_RE = /^vt\s/;
-    var FACE_RE = /^f\s/;
-    var WHITESPACE_RE = /\s+/;
-    
-    for (var i = 0; i < lines.length; i++) {
-      var line = lines[i].trim();
-      var elements = line.split(WHITESPACE_RE);
-      elements.shift();
-      
-      if (VERTEX_RE.test(line)) {
-        // if this is a vertex
-        verts.push.apply(verts, elements);
-      } else if (NORMAL_RE.test(line)) {
-        // if this is a vertex normal
-        vertNormals.push.apply(vertNormals, elements);
-      } else if (TEXTURE_RE.test(line)) {
-        // if this is a texture
-        textures.push.apply(textures, elements);
-      } else if (FACE_RE.test(line)) {
-        // if this is a face
-        /*
-        split this face into an array of vertex groups
-        for example:
-           f 16/92/11 14/101/22 1/69/1
-        becomes:
-          ['16/92/11', '14/101/22', '1/69/1'];
-        */
-        var quad = false;
-        for (var j = 0, eleLen = elements.length; j < eleLen; j++){
-            // Triangulating quads
-            // quad: 'f v0/t0/vn0 v1/t1/vn1 v2/t2/vn2 v3/t3/vn3/'
-            // corresponding triangles:
-            //      'f v0/t0/vn0 v1/t1/vn1 v2/t2/vn2'
-            //      'f v2/t2/vn2 v3/t3/vn3 v0/t0/vn0'
-            if(j === 3 && !quad) {
-                // add v2/t2/vn2 in again before continuing to 3
-                j = 2;
-                quad = true;
-            }
-            if(elements[j] in unpacked.hashindices){
-                unpacked.indices.push(unpacked.hashindices[elements[j]]);
-            }
-            else{
-                /*
-                Each element of the face line array is a vertex which has its
-                attributes delimited by a forward slash. This will separate
-                each attribute into another array:
-                    '19/92/11'
-                becomes:
-                    vertex = ['19', '92', '11'];
-                where
-                    vertex[0] is the vertex index
-                    vertex[1] is the texture index
-                    vertex[2] is the normal index
-                 Think of faces having Vertices which are comprised of the
-                 attributes location (v), texture (vt), and normal (vn).
-                 */
-                var vertex = elements[ j ].split( '/' );
-                /*
-                 The verts, textures, and vertNormals arrays each contain a
-                 flattend array of coordinates.
-
-                 Because it gets confusing by referring to vertex and then
-                 vertex (both are different in my descriptions) I will explain
-                 what's going on using the vertexNormals array:
-
-                 vertex[2] will contain the one-based index of the vertexNormals
-                 section (vn). One is subtracted from this index number to play
-                 nice with javascript's zero-based array indexing.
-
-                 Because vertexNormal is a flattened array of x, y, z values,
-                 simple pointer arithmetic is used to skip to the start of the
-                 vertexNormal, then the offset is added to get the correct
-                 component: +0 is x, +1 is y, +2 is z.
-
-                 This same process is repeated for verts and textures.
-                 */
-                // vertex position
-                unpacked.verts.push(+verts[(vertex[0] - 1) * 3 + 0]);
-                unpacked.verts.push(+verts[(vertex[0] - 1) * 3 + 1]);
-                unpacked.verts.push(+verts[(vertex[0] - 1) * 3 + 2]);
-                // vertex textures
-                if (textures.length) {
-                  unpacked.textures.push(+textures[(vertex[1] - 1) * 2 + 0]);
-                  unpacked.textures.push(+textures[(vertex[1] - 1) * 2 + 1]);
-                }
-                // vertex normals
-                unpacked.norms.push(+vertNormals[(vertex[2] - 1) * 3 + 0]);
-                unpacked.norms.push(+vertNormals[(vertex[2] - 1) * 3 + 1]);
-                unpacked.norms.push(+vertNormals[(vertex[2] - 1) * 3 + 2]);
-                // add the newly created vertex to the list of indices
-                unpacked.hashindices[elements[j]] = unpacked.index;
-                unpacked.indices.push(unpacked.index);
-                // increment the counter
-                unpacked.index += 1;
-            }
-            if(j === 3 && quad) {
-                // add v0/t0/vn0 onto the second triangle
-                unpacked.indices.push( unpacked.hashindices[elements[0]]);
-            }
-        }
-      }
-    }
-    this.vertices = unpacked.verts;
-    this.vertexNormals = unpacked.norms;
-    this.textures = unpacked.textures;
-    this.indices = unpacked.indices;
-  }
-
-  var Ajax = function(){
-    // this is just a helper class to ease ajax calls
-    var _this = this;
-    this.xmlhttp = new XMLHttpRequest();
-
-    this.get = function(url, callback){
-      _this.xmlhttp.onreadystatechange = function(){
-        if(_this.xmlhttp.readyState === 4){
-          callback(_this.xmlhttp.responseText, _this.xmlhttp.status);
-        }
-      };
-      _this.xmlhttp.open('GET', url, true);
-      _this.xmlhttp.send();
-    }
-  };
-
-  /**
-   * Takes in an object of `mesh_name`, `'/url/to/OBJ/file'` pairs and a callback
-   * function. Each OBJ file will be ajaxed in and automatically converted to
-   * an OBJ.Mesh. When all files have successfully downloaded the callback
-   * function provided will be called and passed in an object containing
-   * the newly created meshes.
-   *
-   * **Note:** In order to use this function as a way to download meshes, a
-   * webserver of some sort must be used.
-   *
-   * @param {Object} nameAndURLs an object where the key is the name of the mesh and the value is the url to that mesh's OBJ file
-   *
-   * @param {Function} completionCallback should contain a function that will take one parameter: an object array where the keys will be the unique object name and the value will be a Mesh object
-   *
-   * @param {Object} meshes In case other meshes are loaded separately or if a previously declared variable is desired to be used, pass in a (possibly empty) json object of the pattern: { '<mesh_name>': OBJ.Mesh }
-   *
-   */
-  OBJ.downloadMeshes = function (nameAndURLs, completionCallback, meshes){
-    // the total number of meshes. this is used to implement "blocking"
-    var semaphore = Object.keys(nameAndURLs).length;
-    // if error is true, an alert will given
-    var error = false;
-    // this is used to check if all meshes have been downloaded
-    // if meshes is supplied, then it will be populated, otherwise
-    // a new object is created. this will be passed into the completionCallback
-    if(meshes === undefined) meshes = {};
-    // loop over the mesh_name,url key,value pairs
-    for(var mesh_name in nameAndURLs){
-      if(nameAndURLs.hasOwnProperty(mesh_name)){
-        new Ajax().get(nameAndURLs[mesh_name], (function(name) {
-          return function (data, status) {
-            if (status === 200) {
-              meshes[name] = new OBJ.Mesh(data);
-            }
-            else {
-              error = true;
-              console.error('An error has occurred and the mesh "' +
-                name + '" could not be downloaded.');
-            }
-            // the request has finished, decrement the counter
-            semaphore--;
-            if (semaphore === 0) {
-              if (error) {
-                // if an error has occurred, the user is notified here and the
-                // callback is not called
-                console.error('An error has occurred and one or meshes has not been ' +
-                  'downloaded. The execution of the script has terminated.');
-                throw '';
-              }
-              // there haven't been any errors in retrieving the meshes
-              // call the callback
-              completionCallback(meshes);
-            }
-          }
-        })(mesh_name));
-      }
-    }
-  };
-
-  var _buildBuffer = function( gl, type, data, itemSize ){
-    var buffer = gl.createBuffer();
-    var arrayView = type === gl.ARRAY_BUFFER ? Float32Array : Uint16Array;
-    gl.bindBuffer(type, buffer);
-    gl.bufferData(type, new arrayView(data), gl.STATIC_DRAW);
-    buffer.itemSize = itemSize;
-    buffer.numItems = data.length / itemSize;
-    return buffer;
-  }
-
-  /**
-   * Takes in the WebGL context and a Mesh, then creates and appends the buffers
-   * to the mesh object as attributes.
-   *
-   * @param {WebGLRenderingContext} gl the `canvas.getContext('webgl')` context instance
-   * @param {Mesh} mesh a single `OBJ.Mesh` instance
-   *
-   * The newly created mesh attributes are:
-   *
-   * Attrbute | Description
-   * :--- | ---
-   * **normalBuffer**       |contains the model&#39;s Vertex Normals
-   * normalBuffer.itemSize  |set to 3 items
-   * normalBuffer.numItems  |the total number of vertex normals
-   * |
-   * **textureBuffer**      |contains the model&#39;s Texture Coordinates
-   * textureBuffer.itemSize |set to 2 items
-   * textureBuffer.numItems |the number of texture coordinates
-   * |
-   * **vertexBuffer**       |contains the model&#39;s Vertex Position Coordinates (does not include w)
-   * vertexBuffer.itemSize  |set to 3 items
-   * vertexBuffer.numItems  |the total number of vertices
-   * |
-   * **indexBuffer**        |contains the indices of the faces
-   * indexBuffer.itemSize   |is set to 1
-   * indexBuffer.numItems   |the total number of indices
-   *
-   * A simple example (a lot of steps are missing, so don't copy and paste):
-   *
-   *     var gl   = canvas.getContext('webgl'),
-   *         mesh = OBJ.Mesh(obj_file_data);
-   *     // compile the shaders and create a shader program
-   *     var shaderProgram = gl.createProgram();
-   *     // compilation stuff here
-   *     ...
-   *     // make sure you have vertex, vertex normal, and texture coordinate
-   *     // attributes located in your shaders and attach them to the shader program
-   *     shaderProgram.vertexPositionAttribute = gl.getAttribLocation(shaderProgram, "aVertexPosition");
-   *     gl.enableVertexAttribArray(shaderProgram.vertexPositionAttribute);
-   *
-   *     shaderProgram.vertexNormalAttribute = gl.getAttribLocation(shaderProgram, "aVertexNormal");
-   *     gl.enableVertexAttribArray(shaderProgram.vertexNormalAttribute);
-   *
-   *     shaderProgram.textureCoordAttribute = gl.getAttribLocation(shaderProgram, "aTextureCoord");
-   *     gl.enableVertexAttribArray(shaderProgram.textureCoordAttribute);
-   *
-   *     // create and initialize the vertex, vertex normal, and texture coordinate buffers
-   *     // and save on to the mesh object
-   *     OBJ.initMeshBuffers(gl, mesh);
-   *
-   *     // now to render the mesh
-   *     gl.bindBuffer(gl.ARRAY_BUFFER, mesh.vertexBuffer);
-   *     gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, mesh.vertexBuffer.itemSize, gl.FLOAT, false, 0, 0);
-   *
-   *     gl.bindBuffer(gl.ARRAY_BUFFER, mesh.textureBuffer);
-   *     gl.vertexAttribPointer(shaderProgram.textureCoordAttribute, mesh.textureBuffer.itemSize, gl.FLOAT, false, 0, 0);
-   *
-   *     gl.bindBuffer(gl.ARRAY_BUFFER, mesh.normalBuffer);
-   *     gl.vertexAttribPointer(shaderProgram.vertexNormalAttribute, mesh.normalBuffer.itemSize, gl.FLOAT, false, 0, 0);
-   *
-   *     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, model.mesh.indexBuffer);
-   *     gl.drawElements(gl.TRIANGLES, model.mesh.indexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
-   */
-  OBJ.initMeshBuffers = function( gl, mesh ){
-    mesh.normalBuffer = _buildBuffer(gl, gl.ARRAY_BUFFER, mesh.vertexNormals, 3);
-    mesh.textureBuffer = _buildBuffer(gl, gl.ARRAY_BUFFER, mesh.textures, 2);
-    mesh.vertexBuffer = _buildBuffer(gl, gl.ARRAY_BUFFER, mesh.vertices, 3);
-    mesh.indexBuffer = _buildBuffer(gl, gl.ELEMENT_ARRAY_BUFFER, mesh.indices, 1);
-  }
-
-  OBJ.deleteMeshBuffers = function( gl, mesh ){
-    gl.deleteBuffer(mesh.normalBuffer);
-    gl.deleteBuffer(mesh.textureBuffer);
-    gl.deleteBuffer(mesh.vertexBuffer);
-    gl.deleteBuffer(mesh.indexBuffer);
-  }
-})();
-
-
-
-/***/ }),
 /* 8 */
 /***/ (function(module, exports) {
 
@@ -4542,7 +4163,7 @@ module.exports = g;
 /* 9 */
 /***/ (function(module, exports, __webpack_require__) {
 
-module.exports = __webpack_require__(0);
+module.exports = __webpack_require__(1);
 
 
 /***/ })

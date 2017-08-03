@@ -26,4 +26,11 @@ module.exports = {
 			ts:Date.now()
 		})
 	]
+	/*
+	.concat([
+		new webpack
+		.optimize
+		.UglifyJsPlugin({ compress: true })
+	])
+	*/
 };

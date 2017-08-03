@@ -47,6 +47,21 @@ class GlUtils{
 		self.ctx = ctx;
 		self.shaderProgram = null;
 	}
+	initMeshBuffers( gl, mesh ){
+		mesh.normalBuffer = this.buildBuffer(gl, gl.ARRAY_BUFFER, mesh.vertexNormals, 3);
+		mesh.textureBuffer = this.buildBuffer(gl, gl.ARRAY_BUFFER, mesh.textures, 2);
+		mesh.vertexBuffer = this.buildBuffer(gl, gl.ARRAY_BUFFER, mesh.vertices, 3);
+		mesh.indexBuffer = this.buildBuffer(gl, gl.ELEMENT_ARRAY_BUFFER, mesh.indices, 1);
+	}
+	buildBuffer(gl, type, data, itemSize){
+		var buffer = gl.createBuffer();
+		var arrayView = type === gl.ARRAY_BUFFER ? Float32Array : Uint16Array;
+		gl.bindBuffer(type, buffer);
+		gl.bufferData(type, new arrayView(data), gl.STATIC_DRAW);
+		buffer.itemSize = itemSize;
+		buffer.numItems = data.length / itemSize;
+		return buffer;
+	}
 	webgl_support(canvas){
 		try{
 			return !! window.WebGLRenderingContext && ( 
