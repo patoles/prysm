@@ -69,7 +69,12 @@ export default {
 			self.shaderProgram.wave[key].time = self.ctx.getUniformLocation(self.shaderProgram, "wave[" + key + "].time");
 			self.shaderProgram.wave[key].shockParams = self.ctx.getUniformLocation(self.shaderProgram, "wave[" + key + "].shockParams");
 			self.shaderProgram.wave[key].hasShock = self.ctx.getUniformLocation(self.shaderProgram, "wave[" + key + "].hasShock");
-		})
+		});
+		var posX = self.realWidth / 2;
+		var posY = self.realHeight / 2;
+		setInterval(() => {
+			this.setWavePos(self, posX, posY);
+		}, 1000);
     },
     transform(self){
 		self.waveList.forEach((item) => {

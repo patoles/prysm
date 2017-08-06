@@ -296,6 +296,8 @@ module.exports = {
 		for (var x = 0; x < self.WAVE_LIST_SIZE; x++) self.waveList.push({ time: 0, center: [0, 0], on: false, shockParams: self.waveParams.shockParams, speed: self.waveParams.speed });
 	},
 	init: function init(self) {
+		var _this = this;
+
 		self.shaderProgram.wave = new Array(10);
 		self.waveList.forEach(function (item, key) {
 			self.shaderProgram.wave[key] = {};
@@ -304,6 +306,11 @@ module.exports = {
 			self.shaderProgram.wave[key].shockParams = self.ctx.getUniformLocation(self.shaderProgram, "wave[" + key + "].shockParams");
 			self.shaderProgram.wave[key].hasShock = self.ctx.getUniformLocation(self.shaderProgram, "wave[" + key + "].hasShock");
 		});
+		var posX = self.realWidth / 2;
+		var posY = self.realHeight / 2;
+		setInterval(function () {
+			_this.setWavePos(self, posX, posY);
+		}, 1000);
 	},
 	transform: function transform(self) {
 		self.waveList.forEach(function (item) {
@@ -459,9 +466,7 @@ var WebglEngine = (function () {
 				this.ctx.attachShader(this.shaderProgram, vertexShader);
 				this.ctx.attachShader(this.shaderProgram, fragmentShader);
 				this.ctx.linkProgram(this.shaderProgram);
-				if (!this.ctx.getProgramParameter(this.shaderProgram, this.ctx.LINK_STATUS)) {
-					alert("Unable to initialize the shader program.");
-				}
+				if (!this.ctx.getProgramParameter(this.shaderProgram, this.ctx.LINK_STATUS)) alert("Unable to initialize the shader program.");
 				this.ctx.useProgram(this.shaderProgram);
 				this.shaderProgram.vertexPositionAttribute = this.ctx.getAttribLocation(this.shaderProgram, "aVertexPosition");
 				this.ctx.enableVertexAttribArray(this.shaderProgram.vertexPositionAttribute);

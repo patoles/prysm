@@ -47,9 +47,8 @@ class WebglEngine{
 		this.ctx.attachShader(this.shaderProgram, vertexShader);
 		this.ctx.attachShader(this.shaderProgram, fragmentShader);
 		this.ctx.linkProgram(this.shaderProgram);
-		if (!this.ctx.getProgramParameter(this.shaderProgram, this.ctx.LINK_STATUS)) {
+		if (!this.ctx.getProgramParameter(this.shaderProgram, this.ctx.LINK_STATUS))
 			alert("Unable to initialize the shader program.");
-		}
 		this.ctx.useProgram(this.shaderProgram);
 		this.shaderProgram.vertexPositionAttribute = this.ctx.getAttribLocation(this.shaderProgram, "aVertexPosition");
 		this.ctx.enableVertexAttribArray(this.shaderProgram.vertexPositionAttribute);
