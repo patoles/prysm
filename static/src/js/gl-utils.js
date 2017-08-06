@@ -47,7 +47,7 @@ class GlUtils{
 		self.ctx = ctx;
 		self.shaderProgram = null;
 	}
-	initMeshBuffers( gl, mesh ){
+	initMeshBuffers(gl, mesh ){
 		mesh.normalBuffer = this.buildBuffer(gl, gl.ARRAY_BUFFER, mesh.vertexNormals, 3);
 		mesh.textureBuffer = this.buildBuffer(gl, gl.ARRAY_BUFFER, mesh.textures, 2);
 		mesh.vertexBuffer = this.buildBuffer(gl, gl.ARRAY_BUFFER, mesh.vertices, 3);
@@ -61,6 +61,54 @@ class GlUtils{
 		buffer.itemSize = itemSize;
 		buffer.numItems = data.length / itemSize;
 		return buffer;
+	}
+	getShader(gl, shaderObj) {
+		var shader;		
+		if (shaderObj.type == "x-shader/x-fragment")
+			shader = gl.createShader(gl.FRAGMENT_SHADER);
+		else if (shaderObj.type == "x-shader/x-vertex")
+			shader = gl.createShader(gl.VERTEX_SHADER);
+		else
+			return null;
+		gl.shaderSource(shader, shaderObj.source);
+		gl.compileShader(shader);  
+		if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {  
+			alert("An error occurred compiling the shaders: " + gl.getShaderInfoLog(shader));  
+			return null;  
+		}
+		return shader;
+	}
+	initShaders(self, fs, vs){
+		var fragmentShader = this.getShader(self.ctx, fs);
+		var vertexShader = this.getShader(self.ctx, vs);
+		self.shaderProgram = self.ctx.createProgram();
+		self.ctx.attachShader(self.shaderProgram, vertexShader);
+		self.ctx.attachShader(self.shaderProgram, fragmentShader);
+		self.ctx.linkProgram(self.shaderProgram);
+		if (!self.ctx.getProgramParameter(self.shaderProgram, self.ctx.LINK_STATUS))
+			alert("Unable to initialize the shader program.");
+		self.ctx.useProgram(self.shaderProgram);
+		self.shaderProgram.vertexPositionAttribute = self.ctx.getAttribLocation(self.shaderProgram, "aVertexPosition");
+		self.ctx.enableVertexAttribArray(self.shaderProgram.vertexPositionAttribute);
+		self.shaderProgram.vertexNormalAttribute = self.ctx.getAttribLocation(self.shaderProgram, "aVertexNormal");
+		self.ctx.enableVertexAttribArray(self.shaderProgram.vertexNormalAttribute);
+		self.shaderProgram.samplerUniform = self.ctx.getUniformLocation(self.shaderProgram, "uSampler");
+		self.shaderProgram.screenRatio = self.ctx.getUniformLocation(self.shaderProgram, "screenRatio");
+	}
+	drawObject(self, mesh, drawShaders){
+		self.ctx.clear(self.ctx.COLOR_BUFFER_BIT | self.ctx.DEPTH_BUFFER_BIT);
+		self.ctx.useProgram(self.shaderProgram);
+		self.ctx.bindBuffer(self.ctx.ARRAY_BUFFER, mesh.vertexBuffer);
+		self.ctx.vertexAttribPointer(self.shaderProgram.vertexPositionAttribute, mesh.vertexBuffer.itemSize, self.ctx.FLOAT, false, 0, 0);
+		self.ctx.bindBuffer(self.ctx.ARRAY_BUFFER, mesh.normalBuffer);
+		self.ctx.vertexAttribPointer(self.shaderProgram.vertexNormalAttribute, mesh.normalBuffer.itemSize, self.ctx.FLOAT, false, 0, 0);
+		self.ctx.activeTexture(self.ctx.TEXTURE0);
+		self.ctx.bindTexture(self.ctx.TEXTURE_2D, mesh.texture);
+		self.ctx.uniform1i(self.shaderProgram.samplerUniform, 0);
+		self.ctx.uniform2fv(self.shaderProgram.screenRatio, [1.0, self.frameInfo.screenRatio]);
+		drawShaders(self);
+		self.ctx.bindBuffer(self.ctx.ELEMENT_ARRAY_BUFFER, mesh.indexBuffer);
+		self.ctx.drawElements(self.ctx.TRIANGLES, mesh.indexBuffer.numItems, self.ctx.UNSIGNED_SHORT, 0);
 	}
 	webgl_support(canvas){
 		try{

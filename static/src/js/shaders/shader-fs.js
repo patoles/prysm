@@ -2,30 +2,24 @@ export default {
     type:'x-shader/x-fragment',
     source:`
         #define MAX_WAVE_NBR 10
-        precision mediump float;
+		precision mediump float;
+		
         varying highp vec2 vTextureCoord;
-
         uniform sampler2D uSampler;
-        uniform vec4 uColor;
-        uniform bool uHasTexure;
-
-        uniform vec2 screenRatio;
-
+		uniform vec2 screenRatio;
+		
         struct waveStruct{
             vec2 center;
             float time;
             vec3 shockParams;
             bool hasShock;
         };
-
         uniform waveStruct wave[MAX_WAVE_NBR];
 
         void main(void){
             vec4 fragmentColor;
-            if(uHasTexure)
-                fragmentColor = texture2D(uSampler, vTextureCoord);
-            else
-                fragmentColor = vec4(uColor.rgb, uColor.a);
+			fragmentColor = texture2D(uSampler, vTextureCoord);
+
             if (fragmentColor.a <= 0.1) discard;
 
             vec2 uv = vTextureCoord.xy;
@@ -76,7 +70,15 @@ export default {
 			this.setWavePos(self, posX, posY);
 		}, 1000);
     },
-    transform(self){
+	draw(self){
+		self.waveList.forEach((item, key) => {
+			self.ctx.uniform1i(self.shaderProgram.wave[key].hasShock, item.on);
+			self.ctx.uniform2fv(self.shaderProgram.wave[key].center, item.center);
+			self.ctx.uniform1f(self.shaderProgram.wave[key].time, item.time);
+			self.ctx.uniform3fv(self.shaderProgram.wave[key].shockParams, item.shockParams);
+		});
+	},
+	transform(self){
 		self.waveList.forEach((item) => {
 			if (item.on)
 			{
@@ -89,7 +91,7 @@ export default {
 				}
 			}
 		});
-    },
+	},
     handleClick(event, self){
 		var posX = event.clientX - event.target.getBoundingClientRect().left;
 		var posY = event.clientY - event.target.getBoundingClientRect().top;

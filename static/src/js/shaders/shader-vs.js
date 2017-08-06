@@ -11,7 +11,6 @@ export default {
         varying highp vec3 vLighting;
 
         const vec2 madd=vec2(0.5, 0.5);
-        attribute vec2 vertexIn;
 
 
         void main(void){

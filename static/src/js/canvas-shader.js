@@ -15,13 +15,15 @@ class CanvasShader extends WebglEngine{
 		this.initTexture(this.meshes.plan, params.texture);
 	}
 	initShaders(fs, vs){
-		super.initShaders(fs, vs);
+		GlUtils.initShaders(this, fs, vs);
 		fs.init && fs.init(this);
 		vs.init && vs.init(this);
 	}
 	draw(){
-		this.ctx.clear(this.ctx.COLOR_BUFFER_BIT | this.ctx.DEPTH_BUFFER_BIT);
-		this.drawObject(this.meshes.plan, [1.0, 1.0, 1.0, 1.0]);
+		GlUtils.drawObject(this, this.meshes.plan, (self) => {
+			fgShader.draw && fgShader.draw(self);
+			vcShader.draw && vcShader.draw(self);
+		});
 		this.transform();
 	}
 	transform(){

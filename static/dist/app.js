@@ -149,6 +149,55 @@ var GlUtils = (function () {
 				return buffer;
 			}
 		},
+		getShader: {
+			value: function getShader(gl, shaderObj) {
+				var shader;
+				if (shaderObj.type == "x-shader/x-fragment") shader = gl.createShader(gl.FRAGMENT_SHADER);else if (shaderObj.type == "x-shader/x-vertex") shader = gl.createShader(gl.VERTEX_SHADER);else {
+					return null;
+				}gl.shaderSource(shader, shaderObj.source);
+				gl.compileShader(shader);
+				if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+					alert("An error occurred compiling the shaders: " + gl.getShaderInfoLog(shader));
+					return null;
+				}
+				return shader;
+			}
+		},
+		initShaders: {
+			value: function initShaders(self, fs, vs) {
+				var fragmentShader = this.getShader(self.ctx, fs);
+				var vertexShader = this.getShader(self.ctx, vs);
+				self.shaderProgram = self.ctx.createProgram();
+				self.ctx.attachShader(self.shaderProgram, vertexShader);
+				self.ctx.attachShader(self.shaderProgram, fragmentShader);
+				self.ctx.linkProgram(self.shaderProgram);
+				if (!self.ctx.getProgramParameter(self.shaderProgram, self.ctx.LINK_STATUS)) alert("Unable to initialize the shader program.");
+				self.ctx.useProgram(self.shaderProgram);
+				self.shaderProgram.vertexPositionAttribute = self.ctx.getAttribLocation(self.shaderProgram, "aVertexPosition");
+				self.ctx.enableVertexAttribArray(self.shaderProgram.vertexPositionAttribute);
+				self.shaderProgram.vertexNormalAttribute = self.ctx.getAttribLocation(self.shaderProgram, "aVertexNormal");
+				self.ctx.enableVertexAttribArray(self.shaderProgram.vertexNormalAttribute);
+				self.shaderProgram.samplerUniform = self.ctx.getUniformLocation(self.shaderProgram, "uSampler");
+				self.shaderProgram.screenRatio = self.ctx.getUniformLocation(self.shaderProgram, "screenRatio");
+			}
+		},
+		drawObject: {
+			value: function drawObject(self, mesh, drawShaders) {
+				self.ctx.clear(self.ctx.COLOR_BUFFER_BIT | self.ctx.DEPTH_BUFFER_BIT);
+				self.ctx.useProgram(self.shaderProgram);
+				self.ctx.bindBuffer(self.ctx.ARRAY_BUFFER, mesh.vertexBuffer);
+				self.ctx.vertexAttribPointer(self.shaderProgram.vertexPositionAttribute, mesh.vertexBuffer.itemSize, self.ctx.FLOAT, false, 0, 0);
+				self.ctx.bindBuffer(self.ctx.ARRAY_BUFFER, mesh.normalBuffer);
+				self.ctx.vertexAttribPointer(self.shaderProgram.vertexNormalAttribute, mesh.normalBuffer.itemSize, self.ctx.FLOAT, false, 0, 0);
+				self.ctx.activeTexture(self.ctx.TEXTURE0);
+				self.ctx.bindTexture(self.ctx.TEXTURE_2D, mesh.texture);
+				self.ctx.uniform1i(self.shaderProgram.samplerUniform, 0);
+				self.ctx.uniform2fv(self.shaderProgram.screenRatio, [1, self.frameInfo.screenRatio]);
+				drawShaders(self);
+				self.ctx.bindBuffer(self.ctx.ELEMENT_ARRAY_BUFFER, mesh.indexBuffer);
+				self.ctx.drawElements(self.ctx.TRIANGLES, mesh.indexBuffer.numItems, self.ctx.UNSIGNED_SHORT, 0);
+			}
+		},
 		webgl_support: {
 			value: function webgl_support(canvas) {
 				try {
@@ -228,15 +277,17 @@ var CanvasShader = (function (_WebglEngine) {
 	_createClass(CanvasShader, {
 		initShaders: {
 			value: function initShaders(fs, vs) {
-				_get(Object.getPrototypeOf(CanvasShader.prototype), "initShaders", this).call(this, fs, vs);
+				GlUtils.initShaders(this, fs, vs);
 				fs.init && fs.init(this);
 				vs.init && vs.init(this);
 			}
 		},
 		draw: {
 			value: function draw() {
-				this.ctx.clear(this.ctx.COLOR_BUFFER_BIT | this.ctx.DEPTH_BUFFER_BIT);
-				this.drawObject(this.meshes.plan, [1, 1, 1, 1]);
+				GlUtils.drawObject(this, this.meshes.plan, function (self) {
+					fgShader.draw && fgShader.draw(self);
+					vcShader.draw && vcShader.draw(self);
+				});
 				this.transform();
 			}
 		},
@@ -280,7 +331,7 @@ module.exports = CanvasShader;
 
 module.exports = {
 	type: "x-shader/x-fragment",
-	source: "\n        #define MAX_WAVE_NBR 10\n        precision mediump float;\n        varying highp vec2 vTextureCoord;\n\n        uniform sampler2D uSampler;\n        uniform vec4 uColor;\n        uniform bool uHasTexure;\n\n        uniform vec2 screenRatio;\n\n        struct waveStruct{\n            vec2 center;\n            float time;\n            vec3 shockParams;\n            bool hasShock;\n        };\n\n        uniform waveStruct wave[MAX_WAVE_NBR];\n\n        void main(void){\n            vec4 fragmentColor;\n            if(uHasTexure)\n                fragmentColor = texture2D(uSampler, vTextureCoord);\n            else\n                fragmentColor = vec4(uColor.rgb, uColor.a);\n            if (fragmentColor.a <= 0.1) discard;\n\n            vec2 uv = vTextureCoord.xy;\n            vec2 texCoord = uv;\n\n            for (int count=0;count < MAX_WAVE_NBR;count++)\n            {\n                float distance = distance(uv*screenRatio, wave[count].center*screenRatio);\n                if ((distance <= (wave[count].time + wave[count].shockParams.z)) && (distance >= (wave[count].time - wave[count].shockParams.z)))\n                {\n                    float diff = (distance - wave[count].time); \n                    float powDiff = 1.0 - pow(abs(diff*wave[count].shockParams.x), wave[count].shockParams.y); \n                    float diffTime = diff  * powDiff;\n                    vec2 diffUV = normalize((uv * screenRatio) - (wave[count].center * screenRatio)); \n                    texCoord = uv + (diffUV * diffTime);\n                }\n            }\n            gl_FragColor = texture2D(uSampler, texCoord);\n        }\n    ",
+	source: "\n        #define MAX_WAVE_NBR 10\n\t\tprecision mediump float;\n\t\t\n        varying highp vec2 vTextureCoord;\n        uniform sampler2D uSampler;\n\t\tuniform vec2 screenRatio;\n\t\t\n        struct waveStruct{\n            vec2 center;\n            float time;\n            vec3 shockParams;\n            bool hasShock;\n        };\n        uniform waveStruct wave[MAX_WAVE_NBR];\n\n        void main(void){\n            vec4 fragmentColor;\n\t\t\tfragmentColor = texture2D(uSampler, vTextureCoord);\n\n            if (fragmentColor.a <= 0.1) discard;\n\n            vec2 uv = vTextureCoord.xy;\n            vec2 texCoord = uv;\n\n            for (int count=0;count < MAX_WAVE_NBR;count++)\n            {\n                float distance = distance(uv*screenRatio, wave[count].center*screenRatio);\n                if ((distance <= (wave[count].time + wave[count].shockParams.z)) && (distance >= (wave[count].time - wave[count].shockParams.z)))\n                {\n                    float diff = (distance - wave[count].time); \n                    float powDiff = 1.0 - pow(abs(diff*wave[count].shockParams.x), wave[count].shockParams.y); \n                    float diffTime = diff  * powDiff;\n                    vec2 diffUV = normalize((uv * screenRatio) - (wave[count].center * screenRatio)); \n                    texCoord = uv + (diffUV * diffTime);\n                }\n            }\n            gl_FragColor = texture2D(uSampler, texCoord);\n        }\n    ",
 	setParams: function setParams(self, params) {
 		self.WAVE_LIST_SIZE = 10;
 		self.WAVE_LIFESPAN = 1.5;
@@ -311,6 +362,14 @@ module.exports = {
 		setInterval(function () {
 			_this.setWavePos(self, posX, posY);
 		}, 1000);
+	},
+	draw: function draw(self) {
+		self.waveList.forEach(function (item, key) {
+			self.ctx.uniform1i(self.shaderProgram.wave[key].hasShock, item.on);
+			self.ctx.uniform2fv(self.shaderProgram.wave[key].center, item.center);
+			self.ctx.uniform1f(self.shaderProgram.wave[key].time, item.time);
+			self.ctx.uniform3fv(self.shaderProgram.wave[key].shockParams, item.shockParams);
+		});
 	},
 	transform: function transform(self) {
 		self.waveList.forEach(function (item) {
@@ -361,7 +420,7 @@ module.exports = {
 
 module.exports = {
     type: "x-shader/x-vertex",
-    source: "\n        precision mediump float;\n        attribute highp vec3 aVertexNormal;\n        attribute highp vec3 aVertexPosition;\n\n        uniform highp mat4 uNormalMatrix;\n\n        varying highp vec2 vTextureCoord;\n        varying highp vec3 vLighting;\n\n        const vec2 madd=vec2(0.5, 0.5);\n        attribute vec2 vertexIn;\n\n\n        void main(void){\n            gl_Position = vec4(aVertexPosition.xy, 0.0, 1.0);\n            vTextureCoord = aVertexPosition.xy*madd+madd;\n\n            highp vec3 ambientLight = vec3(0.6, 0.6, 0.6);\n            highp vec3 directionalLightColor = vec3(0.5, 0.5, 0.75);\n            highp vec3 directionalVector = vec3(0.85, 0.8, -0.40);\n\n            highp vec4 transformedNormal = uNormalMatrix * vec4(aVertexNormal, 1.0);\n\n            highp float directional = max(dot(transformedNormal.xyz, directionalVector), 0.0);\n            vLighting = ambientLight + (directionalLightColor * directional);\n        }\n    "
+    source: "\n        precision mediump float;\n        attribute highp vec3 aVertexNormal;\n        attribute highp vec3 aVertexPosition;\n\n        uniform highp mat4 uNormalMatrix;\n\n        varying highp vec2 vTextureCoord;\n        varying highp vec3 vLighting;\n\n        const vec2 madd=vec2(0.5, 0.5);\n\n\n        void main(void){\n            gl_Position = vec4(aVertexPosition.xy, 0.0, 1.0);\n            vTextureCoord = aVertexPosition.xy*madd+madd;\n\n            highp vec3 ambientLight = vec3(0.6, 0.6, 0.6);\n            highp vec3 directionalLightColor = vec3(0.5, 0.5, 0.75);\n            highp vec3 directionalVector = vec3(0.85, 0.8, -0.40);\n\n            highp vec4 transformedNormal = uNormalMatrix * vec4(aVertexNormal, 1.0);\n\n            highp float directional = max(dot(transformedNormal.xyz, directionalVector), 0.0);\n            vLighting = ambientLight + (directionalLightColor * directional);\n        }\n    "
 };
 
 /***/ }),
@@ -420,18 +479,6 @@ var WebglEngine = (function () {
 	}
 
 	_createClass(WebglEngine, {
-		render: {
-			value: function render() {
-				if (this.active) {
-					requestAnimationFrame(this.render.bind(this));
-					if (this.checkFrameInterval()) {
-						this.frameInfo.then = this.frameInfo.now - this.frameInfo.elapsed % this.frameInfo.fpsInterval;
-						this.clearScreen();
-						this.draw();
-					}
-				}
-			}
-		},
 		checkFrameInterval: {
 			value: function checkFrameInterval() {
 				this.frameInfo.now = Date.now();
@@ -444,38 +491,16 @@ var WebglEngine = (function () {
 				this.ctx.clearColor(0, 0, 0, 0);
 			}
 		},
-		getShader: {
-			value: function getShader(gl, shaderObj) {
-				var shader;
-				if (shaderObj.type == "x-shader/x-fragment") shader = gl.createShader(gl.FRAGMENT_SHADER);else if (shaderObj.type == "x-shader/x-vertex") shader = gl.createShader(gl.VERTEX_SHADER);else {
-					return null;
-				}gl.shaderSource(shader, shaderObj.source);
-				gl.compileShader(shader);
-				if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-					alert("An error occurred compiling the shaders: " + gl.getShaderInfoLog(shader));
-					return null;
+		render: {
+			value: function render() {
+				if (this.active) {
+					requestAnimationFrame(this.render.bind(this));
+					if (this.checkFrameInterval()) {
+						this.frameInfo.then = this.frameInfo.now - this.frameInfo.elapsed % this.frameInfo.fpsInterval;
+						this.clearScreen();
+						this.draw();
+					}
 				}
-				return shader;
-			}
-		},
-		initShaders: {
-			value: function initShaders(fs, vs) {
-				var fragmentShader = this.getShader(this.ctx, fs);
-				var vertexShader = this.getShader(this.ctx, vs);
-				this.shaderProgram = this.ctx.createProgram();
-				this.ctx.attachShader(this.shaderProgram, vertexShader);
-				this.ctx.attachShader(this.shaderProgram, fragmentShader);
-				this.ctx.linkProgram(this.shaderProgram);
-				if (!this.ctx.getProgramParameter(this.shaderProgram, this.ctx.LINK_STATUS)) alert("Unable to initialize the shader program.");
-				this.ctx.useProgram(this.shaderProgram);
-				this.shaderProgram.vertexPositionAttribute = this.ctx.getAttribLocation(this.shaderProgram, "aVertexPosition");
-				this.ctx.enableVertexAttribArray(this.shaderProgram.vertexPositionAttribute);
-				this.shaderProgram.vertexNormalAttribute = this.ctx.getAttribLocation(this.shaderProgram, "aVertexNormal");
-				this.ctx.enableVertexAttribArray(this.shaderProgram.vertexNormalAttribute);
-				this.shaderProgram.hasTexure = this.ctx.getUniformLocation(this.shaderProgram, "uHasTexure");
-				this.shaderProgram.samplerUniform = this.ctx.getUniformLocation(this.shaderProgram, "uSampler");
-				this.shaderProgram.modelColor = this.ctx.getUniformLocation(this.shaderProgram, "uColor");
-				this.shaderProgram.screenRatio = this.ctx.getUniformLocation(this.shaderProgram, "screenRatio");
 			}
 		},
 		handleLoadedTexture: {
@@ -506,32 +531,6 @@ var WebglEngine = (function () {
 				if (object.texture.image.complete || object.texture.image.width + object.texture.image.height > 0) action();else object.texture.image.addEventListener("load", function (event) {
 					action();
 				});
-			}
-		},
-		drawObject: {
-			value: function drawObject(mesh, color) {
-				var _this = this;
-
-				this.ctx.useProgram(this.shaderProgram);
-				this.ctx.bindBuffer(this.ctx.ARRAY_BUFFER, mesh.vertexBuffer);
-				this.ctx.vertexAttribPointer(this.shaderProgram.vertexPositionAttribute, mesh.vertexBuffer.itemSize, this.ctx.FLOAT, false, 0, 0);
-				this.ctx.bindBuffer(this.ctx.ARRAY_BUFFER, mesh.normalBuffer);
-				this.ctx.vertexAttribPointer(this.shaderProgram.vertexNormalAttribute, mesh.normalBuffer.itemSize, this.ctx.FLOAT, false, 0, 0);
-				if ("texture" in mesh) {
-					this.ctx.activeTexture(this.ctx.TEXTURE0);
-					this.ctx.bindTexture(this.ctx.TEXTURE_2D, mesh.texture);
-					this.ctx.uniform1i(this.shaderProgram.samplerUniform, 0);
-					this.ctx.uniform1i(this.shaderProgram.hasTexure, true);
-					this.ctx.uniform2fv(this.shaderProgram.screenRatio, [1, this.frameInfo.screenRatio]);
-					this.waveList.forEach(function (item, key) {
-						_this.ctx.uniform1i(_this.shaderProgram.wave[key].hasShock, item.on);
-						_this.ctx.uniform2fv(_this.shaderProgram.wave[key].center, item.center);
-						_this.ctx.uniform1f(_this.shaderProgram.wave[key].time, item.time);
-						_this.ctx.uniform3fv(_this.shaderProgram.wave[key].shockParams, item.shockParams);
-					});
-				}
-				this.ctx.bindBuffer(this.ctx.ELEMENT_ARRAY_BUFFER, mesh.indexBuffer);
-				this.ctx.drawElements(this.ctx.TRIANGLES, mesh.indexBuffer.numItems, this.ctx.UNSIGNED_SHORT, 0);
 			}
 		}
 	});
