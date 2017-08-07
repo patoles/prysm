@@ -15,6 +15,9 @@ module.exports = {
 			{test:/\.js$/, loader: 'babel-loader', exclude:/node_modules/}
 		]
 	},
+	externals: {
+		'html2canvas': 'html2canvas'
+	},
 	resolve: {
 		extensions: [".tsx", ".ts", ".js", ".jsx"]
 	},

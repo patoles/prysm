@@ -3,15 +3,13 @@ class DomToCanvas{
         return new Promise((resolve, reject) => {
             var wrap = document.createElement('div');
             var targetCopy = target.cloneNode(true);
-            target.appendChild(targetCopy);
             var computedStyle = getComputedStyle(target);
             var backgroundImage = computedStyle["background-image"];
-            targetCopy.style = computedStyle["cssText"];
+            targetCopy.setAttribute("style", computedStyle["cssText"]);
             targetCopy.style.margin = '0';
             targetCopy.style.padding = '0';
             targetCopy.style.WebkitTextFillColor = '';
-
-/*
+            /*
             var getChild = (main) => {
                 [].forEach.call(main, (child, key) => {
 //                    childCopy.style = getComputedStyle(child)["cssText"];
@@ -21,7 +19,6 @@ class DomToCanvas{
             }
             getChild(target.children, targetCopy);
 */
-
             var getSVG = (bgImg) => {
                 var width = computedStyle["width"].replace('px', '');
                 var height = computedStyle["height"].replace('px', '');
@@ -38,7 +35,8 @@ class DomToCanvas{
                 backgroundImage = backgroundImage.match(/\((.*?)\)/)[1].replace(/('|")/g,'');
                 var bgImg = new Image();
                 bgImg.onload = () => {getSVG(bgImg);};
-                this.setCrossOrigin(bgImg, backgroundImage);
+                bgImg.crossOrigin = "Anonymous";
+//                this.setCrossOrigin(bgImg, backgroundImage);
 //                bgImg.src = backgroundImage;
                 var loadBgInterval = setInterval(() => {
                     if (bgImg.complete || bgImg.width+bgImg.height > 0)
@@ -90,6 +88,7 @@ class DomToCanvas{
             var canvas = this.getBase64Canvas(img, width, height);
             resolve(canvas);
         });
+        img.crossOrigin = "Anonymous";
         img.src = url;
 	}
 }

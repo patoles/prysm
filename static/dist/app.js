@@ -225,7 +225,7 @@ module.exports = _GlUtils;
 
 var _interopRequire = function (obj) { return obj && obj.__esModule ? obj["default"] : obj; };
 
-var Shapeshift = _interopRequire(__webpack_require__(6));
+var Shapeshift = _interopRequire(__webpack_require__(5));
 
 var item = document.getElementsByClassName("wavify")[0];
 new Shapeshift(item);
@@ -248,13 +248,13 @@ var _inherits = function (subClass, superClass) { if (typeof superClass !== "fun
 
 var _classCallCheck = function (instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } };
 
-var WebglEngine = _interopRequire(__webpack_require__(7));
+var WebglEngine = _interopRequire(__webpack_require__(6));
 
 var GlUtils = _interopRequire(__webpack_require__(0));
 
-var fgShader = _interopRequire(__webpack_require__(4));
+var fgShader = _interopRequire(__webpack_require__(3));
 
-var vcShader = _interopRequire(__webpack_require__(5));
+var vcShader = _interopRequire(__webpack_require__(4));
 
 var CanvasShader = (function (_WebglEngine) {
 	function CanvasShader(params) {
@@ -322,125 +322,6 @@ module.exports = CanvasShader;
 
 /***/ }),
 /* 3 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var _createClass = (function () { function defineProperties(target, props) { for (var key in props) { var prop = props[key]; prop.configurable = true; if (prop.value) prop.writable = true; } Object.defineProperties(target, props); } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
-
-var _classCallCheck = function (instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } };
-
-var DomToCanvas = (function () {
-    function DomToCanvas() {
-        _classCallCheck(this, DomToCanvas);
-    }
-
-    _createClass(DomToCanvas, {
-        getCanvas: {
-            value: function getCanvas(target) {
-                var _this = this;
-
-                return new Promise(function (resolve, reject) {
-                    var wrap = document.createElement("div");
-                    var targetCopy = target.cloneNode(true);
-                    target.appendChild(targetCopy);
-                    var computedStyle = getComputedStyle(target);
-                    var backgroundImage = computedStyle["background-image"];
-                    targetCopy.style = computedStyle.cssText;
-                    targetCopy.style.margin = "0";
-                    targetCopy.style.padding = "0";
-                    targetCopy.style.WebkitTextFillColor = "";
-
-                    /*
-                                var getChild = (main) => {
-                                    [].forEach.call(main, (child, key) => {
-                    //                    childCopy.style = getComputedStyle(child)["cssText"];
-                                        if (child.hasChildNodes())
-                                            getChild(child.children);
-                                    });
-                                }
-                                getChild(target.children, targetCopy);
-                    */
-
-                    var getSVG = function (bgImg) {
-                        var width = computedStyle.width.replace("px", "");
-                        var height = computedStyle.height.replace("px", "");
-                        if (bgImg) {
-                            var bgURI = _this.getBase64Canvas(bgImg, width, height).toDataURL("png");
-                            targetCopy.style.backgroundImage = "url(\"" + bgURI + "\")";
-                        }
-                        wrap.appendChild(targetCopy);
-                        _this.addDOMElement(resolve, wrap.innerHTML, width, height);
-                    };
-                    if (backgroundImage && backgroundImage !== "" && backgroundImage !== "none") {
-                        backgroundImage = backgroundImage.match(/\((.*?)\)/)[1].replace(/('|")/g, "");
-                        var bgImg = new Image();
-                        bgImg.onload = function () {
-                            getSVG(bgImg);
-                        };
-                        _this.setCrossOrigin(bgImg, backgroundImage);
-                        //                bgImg.src = backgroundImage;
-                        var loadBgInterval = setInterval(function () {
-                            if (bgImg.complete || bgImg.width + bgImg.height > 0) {
-                                bgImg.onload();
-                                clearInterval(loadBgInterval);
-                            }
-                        }, 50);
-                    } else getSVG();
-                });
-            }
-        },
-        getBase64Canvas: {
-            value: function getBase64Canvas(img, width, height) {
-                var canvas = document.createElement("canvas");
-                canvas.width = width;
-                canvas.height = height;
-                var ctx = canvas.getContext("2d");
-                var devicePixelRatio = window.devicePixelRatio || 1;
-                var backingStoreRatio = ctx.webkitBackingStorePixelRatio || ctx.mozBackingStorePixelRatio || ctx.msBackingStorePixelRatio || ctx.oBackingStorePixelRatio || ctx.backingStorePixelRatio || 1;
-                var pixelRatio = devicePixelRatio / backingStoreRatio;
-                if (devicePixelRatio !== backingStoreRatio) {
-                    canvas.width = width * pixelRatio;
-                    canvas.height = height * pixelRatio;
-                    canvas.style.width = width + "px";
-                    canvas.style.height = height + "px";
-                    ctx.scale(pixelRatio, pixelRatio);
-                }
-                ctx.drawImage(img, 0, 0, width, height);
-                return canvas;
-            }
-        },
-        setCrossOrigin: {
-            value: function setCrossOrigin(img, imageSource) {
-                if (imageSource.substring(0, 4).toLowerCase() === "http") img.crossOrigin = "";else img.crossOrigin = null;
-            }
-        },
-        addDOMElement: {
-            value: function addDOMElement(resolve, html, width, height) {
-                var _this = this;
-
-                var data = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"" + width + "\" height=\"" + height + "\" xmlns:xlink= \"http://www.w3.org/1999/xlink\">" + "<foreignObject width=\"" + width + "\" height=\"" + height + "\">" + "<div xmlns=\"http://www.w3.org/1999/xhtml\" style=\"display:block;width:100%;height:100%;position:relative\">" + html + "</div>" + "</foreignObject>" + "</svg>";
-                var url = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(data);
-                var img = new Image();
-                img.addEventListener("load", function (e) {
-                    var canvas = _this.getBase64Canvas(img, width, height);
-                    resolve(canvas);
-                });
-                img.src = url;
-            }
-        }
-    });
-
-    return DomToCanvas;
-})();
-
-var _DomToCanvas = new DomToCanvas();
-
-module.exports = _DomToCanvas;
-
-/***/ }),
-/* 4 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -529,7 +410,7 @@ module.exports = {
 };
 
 /***/ }),
-/* 5 */
+/* 4 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -541,7 +422,7 @@ module.exports = {
 };
 
 /***/ }),
-/* 6 */
+/* 5 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -551,9 +432,9 @@ var _interopRequire = function (obj) { return obj && obj.__esModule ? obj["defau
 
 var _classCallCheck = function (instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } };
 
-//import html2canvas from 'html2canvas';
+var html2canvas = _interopRequire(__webpack_require__(7));
 
-var DomToCanvas = _interopRequire(__webpack_require__(3));
+//import DomToCanvas from './domToCanvas';
 
 var CanvasShader = _interopRequire(__webpack_require__(2));
 
@@ -563,18 +444,17 @@ var Shapeshift = function Shapeshift(target) {
 	var action = function (item) {
 		var positionStyle = getComputedStyle(item).position;
 		if (positionStyle === "static" || positionStyle === "") item.style.position = "relative";
-		DomToCanvas.getCanvas(item).then(function (canvas) {
-			new CanvasShader({ parent: item, id: "canvas-wavify-" + Date.now(), hd: true, texture: canvas.toDataURL("png") });
-		});
 		/*
-  var positionStyle = getComputedStyle(item)["position"];
-  if (positionStyle === "static" || positionStyle === "")
-  	item.style.position = "relative";
-  html2canvas(item).then(function(canvas) {
-  	item.style.border = 'none';
-  	new CanvasShader({parent:item, id:'canvas-wavify-' + Date.now(), hd:true, texture:canvas.toDataURL('png')});
-  });
+  	DomToCanvas.getCanvas(item).then(function(canvas){
+  		new CanvasShader({parent:item, id:'canvas-wavify-' + Date.now(), hd:true, texture:canvas.toDataURL('png')});
+  	});
   */
+		html2canvas(item, {
+			onrendered: function onrendered(canvas) {
+				item.style.border = "none";
+				new CanvasShader({ parent: item, id: "canvas-wavify-" + Date.now(), hd: true, texture: canvas.toDataURL("png") });
+			}
+		});
 	};
 	if (typeof target === "string") [].forEach.call(document.getElementsByClassName(target), function (item) {
 		action(item);
@@ -584,7 +464,7 @@ var Shapeshift = function Shapeshift(target) {
 module.exports = Shapeshift;
 
 /***/ }),
-/* 7 */
+/* 6 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -666,6 +546,12 @@ var WebglEngine = (function () {
 })();
 
 module.exports = WebglEngine;
+
+/***/ }),
+/* 7 */
+/***/ (function(module, exports) {
+
+module.exports = html2canvas;
 
 /***/ }),
 /* 8 */
