@@ -1,13 +1,11 @@
 class GlUtils{
-	setupCanvas(self, params){
-		var parent = params.parent;
+	setupCanvas(self, parent){
 		self.active = true;
 		var frameInfo = {
 			fpsInterval:0, startTime:0, now:0,
 			then:0, elapsed:0, fps:60, fpsRate:0, screenRatio:1
 		};
-		var canvas = document.getElementById(params.id) || document.createElement('canvas');
-		canvas.id = params.id;
+		var canvas = document.createElement('canvas');
 		canvas.className = 'canvas hide';
 		canvas.height = parent.clientHeight;
 		canvas.width = parent.clientWidth;
@@ -17,20 +15,19 @@ class GlUtils{
 		ctx.imageSmoothingQuality = "high";
 		self.realWidth = canvas.width;
 		self.realHeight = canvas.height;
-		if (params.hd)
+		/*** HD */
+		var devicePixelRatio = window.devicePixelRatio || 1;
+		var backingStoreRatio = ctx.webkitBackingStorePixelRatio || ctx.mozBackingStorePixelRatio || ctx.msBackingStorePixelRatio || ctx.oBackingStorePixelRatio || ctx.backingStorePixelRatio || 1;
+		var pixelRatio = devicePixelRatio / backingStoreRatio;
+		if (devicePixelRatio !== backingStoreRatio)
 		{
-			var devicePixelRatio = window.devicePixelRatio || 1;
-			var backingStoreRatio = ctx.webkitBackingStorePixelRatio || ctx.mozBackingStorePixelRatio || ctx.msBackingStorePixelRatio || ctx.oBackingStorePixelRatio || ctx.backingStorePixelRatio || 1;
-			var pixelRatio = devicePixelRatio / backingStoreRatio;
-			if (devicePixelRatio !== backingStoreRatio)
-			{
-				canvas.width = self.realWidth * pixelRatio;
-				canvas.height = self.realHeight * pixelRatio;
-				canvas.style.width = self.realWidth + 'px';
-				canvas.style.height = self.realHeight + 'px';
-				ctx.viewport(0, 0, canvas.width, canvas.height);
-			}
+			canvas.width = self.realWidth * pixelRatio;
+			canvas.height = self.realHeight * pixelRatio;
+			canvas.style.width = self.realWidth + 'px';
+			canvas.style.height = self.realHeight + 'px';
+			ctx.viewport(0, 0, canvas.width, canvas.height);
 		}
+		/* HD ***/
 		frameInfo.screenRatio = canvas.height / canvas.width;
 		frameInfo.fpsInterval = 1000 / frameInfo.fps;
 		frameInfo.then = Date.now();
@@ -40,8 +37,7 @@ class GlUtils{
 		ctx.depthFunc(ctx.LEQUAL);
 		ctx.pixelStorei(ctx.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
 		ctx.clear(ctx.COLOR_BUFFER_BIT | ctx.DEPTH_BUFFER_BIT);
-		if (!document.getElementById(params.id))
-			parent.appendChild(canvas);
+		parent.appendChild(canvas);
 		self.frameInfo = frameInfo;
 		self.canvas = canvas;
 		self.ctx = ctx;
@@ -64,9 +60,9 @@ class GlUtils{
 	}
 	getShader(gl, shaderObj) {
 		var shader;		
-		if (shaderObj.type == "x-shader/x-fragment")
+		if (shaderObj.type == "fragment")
 			shader = gl.createShader(gl.FRAGMENT_SHADER);
-		else if (shaderObj.type == "x-shader/x-vertex")
+		else if (shaderObj.type == "vertex")
 			shader = gl.createShader(gl.VERTEX_SHADER);
 		else
 			return null;
@@ -78,37 +74,23 @@ class GlUtils{
 		}
 		return shader;
 	}
-	initShaders(self, fs, vs){
-		var fragmentShader = this.getShader(self.ctx, fs);
-		var vertexShader = this.getShader(self.ctx, vs);
-		self.shaderProgram = self.ctx.createProgram();
-		self.ctx.attachShader(self.shaderProgram, vertexShader);
-		self.ctx.attachShader(self.shaderProgram, fragmentShader);
-		self.ctx.linkProgram(self.shaderProgram);
-		if (!self.ctx.getProgramParameter(self.shaderProgram, self.ctx.LINK_STATUS))
+	initShaders(self, ctx, fs, vs){
+		var fragmentShader = this.getShader(ctx, fs);
+		var vertexShader = this.getShader(ctx, vs);
+		var shaderProgram = ctx.createProgram();
+		ctx.attachShader(shaderProgram, vertexShader);
+		ctx.attachShader(shaderProgram, fragmentShader);
+		ctx.linkProgram(shaderProgram);
+		if (!ctx.getProgramParameter(shaderProgram, ctx.LINK_STATUS))
 			alert("Unable to initialize the shader program.");
-		self.ctx.useProgram(self.shaderProgram);
-		self.shaderProgram.vertexPositionAttribute = self.ctx.getAttribLocation(self.shaderProgram, "aVertexPosition");
-		self.ctx.enableVertexAttribArray(self.shaderProgram.vertexPositionAttribute);
-		self.shaderProgram.vertexNormalAttribute = self.ctx.getAttribLocation(self.shaderProgram, "aVertexNormal");
-		self.ctx.enableVertexAttribArray(self.shaderProgram.vertexNormalAttribute);
-		self.shaderProgram.samplerUniform = self.ctx.getUniformLocation(self.shaderProgram, "uSampler");
-		self.shaderProgram.screenRatio = self.ctx.getUniformLocation(self.shaderProgram, "screenRatio");
-	}
-	drawObject(self, mesh, drawShaders){
-		self.ctx.clear(self.ctx.COLOR_BUFFER_BIT | self.ctx.DEPTH_BUFFER_BIT);
-		self.ctx.useProgram(self.shaderProgram);
-		self.ctx.bindBuffer(self.ctx.ARRAY_BUFFER, mesh.vertexBuffer);
-		self.ctx.vertexAttribPointer(self.shaderProgram.vertexPositionAttribute, mesh.vertexBuffer.itemSize, self.ctx.FLOAT, false, 0, 0);
-		self.ctx.bindBuffer(self.ctx.ARRAY_BUFFER, mesh.normalBuffer);
-		self.ctx.vertexAttribPointer(self.shaderProgram.vertexNormalAttribute, mesh.normalBuffer.itemSize, self.ctx.FLOAT, false, 0, 0);
-		self.ctx.activeTexture(self.ctx.TEXTURE0);
-		self.ctx.bindTexture(self.ctx.TEXTURE_2D, mesh.texture);
-		self.ctx.uniform1i(self.shaderProgram.samplerUniform, 0);
-		self.ctx.uniform2fv(self.shaderProgram.screenRatio, [1.0, self.frameInfo.screenRatio]);
-		drawShaders(self);
-		self.ctx.bindBuffer(self.ctx.ELEMENT_ARRAY_BUFFER, mesh.indexBuffer);
-		self.ctx.drawElements(self.ctx.TRIANGLES, mesh.indexBuffer.numItems, self.ctx.UNSIGNED_SHORT, 0);
+		ctx.useProgram(shaderProgram);
+		shaderProgram.vertexPositionAttribute = ctx.getAttribLocation(shaderProgram, "aVertexPosition");
+		ctx.enableVertexAttribArray(shaderProgram.vertexPositionAttribute);
+		shaderProgram.vertexNormalAttribute = ctx.getAttribLocation(shaderProgram, "aVertexNormal");
+		ctx.enableVertexAttribArray(shaderProgram.vertexNormalAttribute);
+		shaderProgram.samplerUniform = ctx.getUniformLocation(shaderProgram, "uSampler");
+		shaderProgram.screenRatio = ctx.getUniformLocation(shaderProgram, "screenRatio");
+		self.shaderProgram = shaderProgram;
 	}
 	webgl_support(canvas){
 		try{

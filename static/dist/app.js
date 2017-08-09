@@ -63,7 +63,7 @@
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 8);
+/******/ 	return __webpack_require__(__webpack_require__.s = 9);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -84,15 +84,13 @@ var GlUtils = (function () {
 
 	_createClass(GlUtils, {
 		setupCanvas: {
-			value: function setupCanvas(self, params) {
-				var parent = params.parent;
+			value: function setupCanvas(self, parent) {
 				self.active = true;
 				var frameInfo = {
 					fpsInterval: 0, startTime: 0, now: 0,
 					then: 0, elapsed: 0, fps: 60, fpsRate: 0, screenRatio: 1
 				};
-				var canvas = document.getElementById(params.id) || document.createElement("canvas");
-				canvas.id = params.id;
+				var canvas = document.createElement("canvas");
 				canvas.className = "canvas hide";
 				canvas.height = parent.clientHeight;
 				canvas.width = parent.clientWidth;
@@ -102,18 +100,18 @@ var GlUtils = (function () {
 				ctx.imageSmoothingQuality = "high";
 				self.realWidth = canvas.width;
 				self.realHeight = canvas.height;
-				if (params.hd) {
-					var devicePixelRatio = window.devicePixelRatio || 1;
-					var backingStoreRatio = ctx.webkitBackingStorePixelRatio || ctx.mozBackingStorePixelRatio || ctx.msBackingStorePixelRatio || ctx.oBackingStorePixelRatio || ctx.backingStorePixelRatio || 1;
-					var pixelRatio = devicePixelRatio / backingStoreRatio;
-					if (devicePixelRatio !== backingStoreRatio) {
-						canvas.width = self.realWidth * pixelRatio;
-						canvas.height = self.realHeight * pixelRatio;
-						canvas.style.width = self.realWidth + "px";
-						canvas.style.height = self.realHeight + "px";
-						ctx.viewport(0, 0, canvas.width, canvas.height);
-					}
+				/*** HD */
+				var devicePixelRatio = window.devicePixelRatio || 1;
+				var backingStoreRatio = ctx.webkitBackingStorePixelRatio || ctx.mozBackingStorePixelRatio || ctx.msBackingStorePixelRatio || ctx.oBackingStorePixelRatio || ctx.backingStorePixelRatio || 1;
+				var pixelRatio = devicePixelRatio / backingStoreRatio;
+				if (devicePixelRatio !== backingStoreRatio) {
+					canvas.width = self.realWidth * pixelRatio;
+					canvas.height = self.realHeight * pixelRatio;
+					canvas.style.width = self.realWidth + "px";
+					canvas.style.height = self.realHeight + "px";
+					ctx.viewport(0, 0, canvas.width, canvas.height);
 				}
+				/* HD ***/
 				frameInfo.screenRatio = canvas.height / canvas.width;
 				frameInfo.fpsInterval = 1000 / frameInfo.fps;
 				frameInfo.then = Date.now();
@@ -123,7 +121,7 @@ var GlUtils = (function () {
 				ctx.depthFunc(ctx.LEQUAL);
 				ctx.pixelStorei(ctx.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
 				ctx.clear(ctx.COLOR_BUFFER_BIT | ctx.DEPTH_BUFFER_BIT);
-				if (!document.getElementById(params.id)) parent.appendChild(canvas);
+				parent.appendChild(canvas);
 				self.frameInfo = frameInfo;
 				self.canvas = canvas;
 				self.ctx = ctx;
@@ -152,7 +150,7 @@ var GlUtils = (function () {
 		getShader: {
 			value: function getShader(gl, shaderObj) {
 				var shader;
-				if (shaderObj.type == "x-shader/x-fragment") shader = gl.createShader(gl.FRAGMENT_SHADER);else if (shaderObj.type == "x-shader/x-vertex") shader = gl.createShader(gl.VERTEX_SHADER);else {
+				if (shaderObj.type == "fragment") shader = gl.createShader(gl.FRAGMENT_SHADER);else if (shaderObj.type == "vertex") shader = gl.createShader(gl.VERTEX_SHADER);else {
 					return null;
 				}gl.shaderSource(shader, shaderObj.source);
 				gl.compileShader(shader);
@@ -164,38 +162,22 @@ var GlUtils = (function () {
 			}
 		},
 		initShaders: {
-			value: function initShaders(self, fs, vs) {
-				var fragmentShader = this.getShader(self.ctx, fs);
-				var vertexShader = this.getShader(self.ctx, vs);
-				self.shaderProgram = self.ctx.createProgram();
-				self.ctx.attachShader(self.shaderProgram, vertexShader);
-				self.ctx.attachShader(self.shaderProgram, fragmentShader);
-				self.ctx.linkProgram(self.shaderProgram);
-				if (!self.ctx.getProgramParameter(self.shaderProgram, self.ctx.LINK_STATUS)) alert("Unable to initialize the shader program.");
-				self.ctx.useProgram(self.shaderProgram);
-				self.shaderProgram.vertexPositionAttribute = self.ctx.getAttribLocation(self.shaderProgram, "aVertexPosition");
-				self.ctx.enableVertexAttribArray(self.shaderProgram.vertexPositionAttribute);
-				self.shaderProgram.vertexNormalAttribute = self.ctx.getAttribLocation(self.shaderProgram, "aVertexNormal");
-				self.ctx.enableVertexAttribArray(self.shaderProgram.vertexNormalAttribute);
-				self.shaderProgram.samplerUniform = self.ctx.getUniformLocation(self.shaderProgram, "uSampler");
-				self.shaderProgram.screenRatio = self.ctx.getUniformLocation(self.shaderProgram, "screenRatio");
-			}
-		},
-		drawObject: {
-			value: function drawObject(self, mesh, drawShaders) {
-				self.ctx.clear(self.ctx.COLOR_BUFFER_BIT | self.ctx.DEPTH_BUFFER_BIT);
-				self.ctx.useProgram(self.shaderProgram);
-				self.ctx.bindBuffer(self.ctx.ARRAY_BUFFER, mesh.vertexBuffer);
-				self.ctx.vertexAttribPointer(self.shaderProgram.vertexPositionAttribute, mesh.vertexBuffer.itemSize, self.ctx.FLOAT, false, 0, 0);
-				self.ctx.bindBuffer(self.ctx.ARRAY_BUFFER, mesh.normalBuffer);
-				self.ctx.vertexAttribPointer(self.shaderProgram.vertexNormalAttribute, mesh.normalBuffer.itemSize, self.ctx.FLOAT, false, 0, 0);
-				self.ctx.activeTexture(self.ctx.TEXTURE0);
-				self.ctx.bindTexture(self.ctx.TEXTURE_2D, mesh.texture);
-				self.ctx.uniform1i(self.shaderProgram.samplerUniform, 0);
-				self.ctx.uniform2fv(self.shaderProgram.screenRatio, [1, self.frameInfo.screenRatio]);
-				drawShaders(self);
-				self.ctx.bindBuffer(self.ctx.ELEMENT_ARRAY_BUFFER, mesh.indexBuffer);
-				self.ctx.drawElements(self.ctx.TRIANGLES, mesh.indexBuffer.numItems, self.ctx.UNSIGNED_SHORT, 0);
+			value: function initShaders(self, ctx, fs, vs) {
+				var fragmentShader = this.getShader(ctx, fs);
+				var vertexShader = this.getShader(ctx, vs);
+				var shaderProgram = ctx.createProgram();
+				ctx.attachShader(shaderProgram, vertexShader);
+				ctx.attachShader(shaderProgram, fragmentShader);
+				ctx.linkProgram(shaderProgram);
+				if (!ctx.getProgramParameter(shaderProgram, ctx.LINK_STATUS)) alert("Unable to initialize the shader program.");
+				ctx.useProgram(shaderProgram);
+				shaderProgram.vertexPositionAttribute = ctx.getAttribLocation(shaderProgram, "aVertexPosition");
+				ctx.enableVertexAttribArray(shaderProgram.vertexPositionAttribute);
+				shaderProgram.vertexNormalAttribute = ctx.getAttribLocation(shaderProgram, "aVertexNormal");
+				ctx.enableVertexAttribArray(shaderProgram.vertexNormalAttribute);
+				shaderProgram.samplerUniform = ctx.getUniformLocation(shaderProgram, "uSampler");
+				shaderProgram.screenRatio = ctx.getUniformLocation(shaderProgram, "screenRatio");
+				self.shaderProgram = shaderProgram;
 			}
 		},
 		webgl_support: {
@@ -225,10 +207,10 @@ module.exports = _GlUtils;
 
 var _interopRequire = function (obj) { return obj && obj.__esModule ? obj["default"] : obj; };
 
-var Shapeshift = _interopRequire(__webpack_require__(5));
+var Shapeshift = _interopRequire(__webpack_require__(6));
 
 var item = document.getElementsByClassName("wavify")[0];
-new Shapeshift(item);
+new Shapeshift(item, "shockwave", null, { speed: 0.02, x: 10.1, y: 0.8, z: 0.1 });
 //	new Shapeshift('wavify');
 
 /***/ }),
@@ -248,26 +230,31 @@ var _inherits = function (subClass, superClass) { if (typeof superClass !== "fun
 
 var _classCallCheck = function (instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } };
 
-var WebglEngine = _interopRequire(__webpack_require__(6));
+var WebglEngine = _interopRequire(__webpack_require__(7));
 
 var GlUtils = _interopRequire(__webpack_require__(0));
 
-var fgShader = _interopRequire(__webpack_require__(3));
+var fgShader = _interopRequire(__webpack_require__(4));
 
-var vcShader = _interopRequire(__webpack_require__(4));
+var vcShader = _interopRequire(__webpack_require__(5));
 
 var CanvasShader = (function (_WebglEngine) {
-	function CanvasShader(params) {
+	function CanvasShader(parent, texture, fragment, vertex, params) {
 		_classCallCheck(this, CanvasShader);
 
-		_get(Object.getPrototypeOf(CanvasShader.prototype), "constructor", this).call(this, params);
-		fgShader.setParams && fgShader.setParams(this, params);
-		vcShader.setParams && vcShader.setParams(this, params);
+		_get(Object.getPrototypeOf(CanvasShader.prototype), "constructor", this).call(this, parent);
+		fragment = fragment.charAt(0).toUpperCase() + fragment.slice(1);
+		vertex = vertex.charAt(0).toUpperCase() + vertex.slice(1);
+		this.fgShader = new fgShader[fragment]();
+		this.vcShader = new vcShader[vertex]();
+		this.shaderParams = {};
+		this.fgShader.setParams && this.fgShader.setParams(this.shaderParams, params);
+		this.vcShader.setParams && this.vcShader.setParams(this.shaderParams, params);
 		this.initClick(this.canvas);
-		this.initShaders(fgShader, vcShader);
+		this.initShaders(this.fgShader, this.vcShader);
 		this.meshes = { plan: { vertices: [-1, -1, 0, 1, -1, 0, 1, 1, 0, -1, 1, 0], vertexNormals: [0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1], textures: [0, 0, 0, 1, 0, 0, 1, 1], indices: [0, 1, 2, 0, 2, 3] } };
 		GlUtils.initMeshBuffers(this.ctx, this.meshes.plan);
-		this.initTexture(this.meshes.plan, params.texture);
+		this.initTexture(this.meshes.plan, texture);
 	}
 
 	_inherits(CanvasShader, _WebglEngine);
@@ -275,24 +262,26 @@ var CanvasShader = (function (_WebglEngine) {
 	_createClass(CanvasShader, {
 		initShaders: {
 			value: function initShaders(fs, vs) {
-				GlUtils.initShaders(this, fs, vs);
-				fs.init && fs.init(this);
-				vs.init && vs.init(this);
+				GlUtils.initShaders(this, this.ctx, fs, vs);
+				fs.init && fs.init(this.ctx, this.shaderProgram, this.shaderParams, { width: this.realWidth, height: this.realHeight });
+				vs.init && vs.init(this.ctx, this.shaderProgram, this.shaderParams, { width: this.realWidth, height: this.realHeight });
 			}
 		},
 		draw: {
 			value: function draw() {
-				GlUtils.drawObject(this, this.meshes.plan, function (self) {
-					fgShader.draw && fgShader.draw(self);
-					vcShader.draw && vcShader.draw(self);
+				var _this = this;
+
+				this.drawObject(this.meshes.plan, function () {
+					_this.fgShader.draw && _this.fgShader.draw(_this.ctx, _this.shaderProgram, _this.shaderParams);
+					_this.vcShader.draw && _this.vcShader.draw(_this.ctx, _this.shaderProgram, _this.shaderParams);
 				});
 				this.transform();
 			}
 		},
 		transform: {
 			value: function transform() {
-				fgShader.transform && fgShader.transform(this);
-				vcShader.transform && vcShader.transform(this);
+				this.fgShader.transform && this.fgShader.transform(this.shaderParams);
+				this.vcShader.transform && this.vcShader.transform(this.shaderParams);
 			}
 		},
 		initClick: {
@@ -303,14 +292,14 @@ var CanvasShader = (function (_WebglEngine) {
 		},
 		handleClick: {
 			value: function handleClick(event) {
-				fgShader.handleClick && fgShader.handleClick(event, this);
-				vcShader.handleClick && vcShader.handleClick(event, this);
+				this.fgShader.handleClick && this.fgShader.handleClick(event, this.shaderParams, { width: this.realWidth, height: this.realHeight });
+				this.vcShader.handleClick && this.vcShader.handleClick(event, this.shaderParams, { width: this.realWidth, height: this.realHeight });
 			}
 		},
 		handleTouchMove: {
 			value: function handleTouchMove(event) {
-				fgShader.handleTouchMove && fgShader.handleTouchMove(event, this);
-				vcShader.handleTouchMove && vcShader.handleTouchMove(event, this);
+				this.fgShader.handleTouchMove && this.fgShader.handleTouchMove(event, this.shaderParams, { width: this.realWidth, height: this.realHeight });
+				this.vcShader.handleTouchMove && this.vcShader.handleTouchMove(event, this.shaderParams, { width: this.realWidth, height: this.realHeight });
 			}
 		}
 	});
@@ -327,87 +316,111 @@ module.exports = CanvasShader;
 "use strict";
 
 
-module.exports = {
-	type: "x-shader/x-fragment",
-	source: "\n        #define MAX_WAVE_NBR 10\n\t\tprecision mediump float;\n\t\t\n        varying highp vec2 vTextureCoord;\n        uniform sampler2D uSampler;\n\t\tuniform vec2 screenRatio;\n\t\t\n        struct waveStruct{\n            vec2 center;\n            float time;\n            vec3 shockParams;\n            bool hasShock;\n        };\n        uniform waveStruct wave[MAX_WAVE_NBR];\n\n        void main(void){\n            vec4 fragmentColor;\n\t\t\tfragmentColor = texture2D(uSampler, vTextureCoord);\n\n            if (fragmentColor.a <= 0.1) discard;\n\n            vec2 uv = vTextureCoord.xy;\n            vec2 texCoord = uv;\n\n            for (int count=0;count < MAX_WAVE_NBR;count++)\n            {\n                float distance = distance(uv*screenRatio, wave[count].center*screenRatio);\n                if ((distance <= (wave[count].time + wave[count].shockParams.z)) && (distance >= (wave[count].time - wave[count].shockParams.z)))\n                {\n                    float diff = (distance - wave[count].time); \n                    float powDiff = 1.0 - pow(abs(diff*wave[count].shockParams.x), wave[count].shockParams.y); \n                    float diffTime = diff  * powDiff;\n                    vec2 diffUV = normalize((uv * screenRatio) - (wave[count].center * screenRatio)); \n                    texCoord = uv + (diffUV * diffTime);\n                }\n            }\n            gl_FragColor = texture2D(uSampler, texCoord);\n        }\n    ",
-	setParams: function setParams(self, params) {
-		self.WAVE_LIST_SIZE = 10;
-		self.WAVE_LIFESPAN = 1.5;
-		self.lastTouchTime = -1;
-		var parent = params.parent;
-		var speed = parent.dataset.waveSpeed && parseFloat(parent.dataset.waveSpeed) || 0.02;
-		var x = parent.dataset.waveX && parseFloat(parent.dataset.waveX);
-		var y = parent.dataset.waveY && parseFloat(parent.dataset.waveY);
-		var z = parent.dataset.waveZ && parseFloat(parent.dataset.waveZ);
-		var shockParams = [x || 10.1, y || 0.8, z || 0.1];
-		self.waveParams = { shockParams: shockParams, speed: speed };
-		self.waveList = [];
-		for (var x = 0; x < self.WAVE_LIST_SIZE; x++) self.waveList.push({ time: 0, center: [0, 0], on: false, shockParams: self.waveParams.shockParams, speed: self.waveParams.speed });
-	},
-	init: function init(self) {
-		var _this = this;
+var _createClass = (function () { function defineProperties(target, props) { for (var key in props) { var prop = props[key]; prop.configurable = true; if (prop.value) prop.writable = true; } Object.defineProperties(target, props); } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
 
-		self.shaderProgram.wave = new Array(10);
-		self.waveList.forEach(function (item, key) {
-			self.shaderProgram.wave[key] = {};
-			self.shaderProgram.wave[key].center = self.ctx.getUniformLocation(self.shaderProgram, "wave[" + key + "].center");
-			self.shaderProgram.wave[key].time = self.ctx.getUniformLocation(self.shaderProgram, "wave[" + key + "].time");
-			self.shaderProgram.wave[key].shockParams = self.ctx.getUniformLocation(self.shaderProgram, "wave[" + key + "].shockParams");
-			self.shaderProgram.wave[key].hasShock = self.ctx.getUniformLocation(self.shaderProgram, "wave[" + key + "].hasShock");
-		});
-		var posX = self.realWidth / 2;
-		var posY = self.realHeight / 2;
-		setInterval(function () {
-			_this.setWavePos(self, posX, posY);
-		}, 1000);
-	},
-	draw: function draw(self) {
-		self.waveList.forEach(function (item, key) {
-			self.ctx.uniform1i(self.shaderProgram.wave[key].hasShock, item.on);
-			self.ctx.uniform2fv(self.shaderProgram.wave[key].center, item.center);
-			self.ctx.uniform1f(self.shaderProgram.wave[key].time, item.time);
-			self.ctx.uniform3fv(self.shaderProgram.wave[key].shockParams, item.shockParams);
-		});
-	},
-	transform: function transform(self) {
-		self.waveList.forEach(function (item) {
-			if (item.on) {
-				item.time += item.speed;
-				if (item.time > self.WAVE_LIFESPAN) {
-					item.on = false;
-					item.center = [0, 0];
-					item.time = 0;
+var _classCallCheck = function (instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } };
+
+var Shockwave = (function () {
+	function Shockwave() {
+		_classCallCheck(this, Shockwave);
+
+		this.type = "fragment", this.source = "\n\t\t\t#define MAX_WAVE_NBR 10\n\t\t\tprecision mediump float;\n\t\t\t\n\t\t\tvarying highp vec2 vTextureCoord;\n\t\t\tuniform sampler2D uSampler;\n\t\t\tuniform vec2 screenRatio;\n\t\t\t\n\t\t\tstruct waveStruct{\n\t\t\t\tvec2 center;\n\t\t\t\tfloat time;\n\t\t\t\tvec3 shockParams;\n\t\t\t\tbool hasShock;\n\t\t\t};\n\t\t\tuniform waveStruct wave[MAX_WAVE_NBR];\n\n\t\t\tvoid main(void){\n\t\t\t\tvec4 fragmentColor;\n\t\t\t\tfragmentColor = texture2D(uSampler, vTextureCoord);\n\n\t\t\t\tif (fragmentColor.a <= 0.1) discard;\n\n\t\t\t\tvec2 uv = vTextureCoord.xy;\n\t\t\t\tvec2 texCoord = uv;\n\n\t\t\t\tfor (int count=0;count < MAX_WAVE_NBR;count++)\n\t\t\t\t{\n\t\t\t\t\tfloat distance = distance(uv*screenRatio, wave[count].center*screenRatio);\n\t\t\t\t\tif ((distance <= (wave[count].time + wave[count].shockParams.z)) && (distance >= (wave[count].time - wave[count].shockParams.z)))\n\t\t\t\t\t{\n\t\t\t\t\t\tfloat diff = (distance - wave[count].time); \n\t\t\t\t\t\tfloat powDiff = 1.0 - pow(abs(diff*wave[count].shockParams.x), wave[count].shockParams.y); \n\t\t\t\t\t\tfloat diffTime = diff  * powDiff;\n\t\t\t\t\t\tvec2 diffUV = normalize((uv * screenRatio) - (wave[count].center * screenRatio)); \n\t\t\t\t\t\ttexCoord = uv + (diffUV * diffTime);\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t\tgl_FragColor = texture2D(uSampler, texCoord);\n\t\t\t}\n\t\t";
+	}
+
+	_createClass(Shockwave, {
+		setParams: {
+			value: function setParams(shaderParams, params) {
+				shaderParams.WAVE_LIST_SIZE = 10;
+				shaderParams.WAVE_LIFESPAN = 1.5;
+				shaderParams.lastTouchTime = -1;
+				var speed = params && params.speed || 0.02;
+				var shockParams = params ? [params.x || 10.1, params.y || 0.8, params.z || 0.1] : [10.1, 0.8, 0.1];
+				shaderParams.waveParams = { shockParams: shockParams, speed: speed };
+				shaderParams.waveList = [];
+				for (var x = 0; x < shaderParams.WAVE_LIST_SIZE; x++) shaderParams.waveList.push({ time: 0, center: [0, 0], on: false, shockParams: shaderParams.waveParams.shockParams, speed: shaderParams.waveParams.speed });
+			}
+		},
+		init: {
+			value: function init(ctx, shaderProgram, shaderParams, canvasInfo) {
+				var _this = this;
+
+				shaderProgram.wave = new Array(10);
+				shaderParams.waveList.forEach(function (item, key) {
+					shaderProgram.wave[key] = {};
+					shaderProgram.wave[key].center = ctx.getUniformLocation(shaderProgram, "wave[" + key + "].center");
+					shaderProgram.wave[key].time = ctx.getUniformLocation(shaderProgram, "wave[" + key + "].time");
+					shaderProgram.wave[key].shockParams = ctx.getUniformLocation(shaderProgram, "wave[" + key + "].shockParams");
+					shaderProgram.wave[key].hasShock = ctx.getUniformLocation(shaderProgram, "wave[" + key + "].hasShock");
+				});
+				var posX = canvasInfo.width / 2;
+				var posY = canvasInfo.height / 2;
+				setInterval(function () {
+					_this.setWavePos(posX, posY, shaderParams, canvasInfo);
+				}, 1000);
+			}
+		},
+		draw: {
+			value: function draw(ctx, shaderProgram, shaderParams) {
+				shaderParams.waveList.forEach(function (item, key) {
+					ctx.uniform1i(shaderProgram.wave[key].hasShock, item.on);
+					ctx.uniform2fv(shaderProgram.wave[key].center, item.center);
+					ctx.uniform1f(shaderProgram.wave[key].time, item.time);
+					ctx.uniform3fv(shaderProgram.wave[key].shockParams, item.shockParams);
+				});
+			}
+		},
+		transform: {
+			value: function transform(shaderParams) {
+				shaderParams.waveList.forEach(function (item) {
+					if (item.on) {
+						item.time += item.speed;
+						if (item.time > shaderParams.WAVE_LIFESPAN) {
+							item.on = false;
+							item.center = [0, 0];
+							item.time = 0;
+						}
+					}
+				});
+			}
+		},
+		handleClick: {
+			value: function handleClick(event, shaderParams, canvasInfo) {
+				var posX = event.clientX - event.target.getBoundingClientRect().left;
+				var posY = event.clientY - event.target.getBoundingClientRect().top;
+				this.setWavePos(posX, posY, shaderParams, canvasInfo);
+			}
+		},
+		handleTouchMove: {
+			value: function handleTouchMove(event, shaderParams, canvasInfo) {
+				if (Date.now() - shaderParams.lastTouchTime > 100) {
+					var posX = event.touches[0].clientX - event.target.getBoundingClientRect().left;
+					var posY = event.touches[0].clientY - event.target.getBoundingClientRect().top;
+					this.setWavePos(posX, posY, shaderParams, canvasInfo);
+					shaderParams.lastTouchTime = Date.now();
 				}
 			}
-		});
-	},
-	handleClick: function handleClick(event, self) {
-		var posX = event.clientX - event.target.getBoundingClientRect().left;
-		var posY = event.clientY - event.target.getBoundingClientRect().top;
-		this.setWavePos(self, posX, posY);
-	},
-	handleTouchMove: function handleTouchMove(event, self) {
-		if (Date.now() - self.lastTouchTime > 100) {
-			var posX = event.touches[0].clientX - event.target.getBoundingClientRect().left;
-			var posY = event.touches[0].clientY - event.target.getBoundingClientRect().top;
-			this.setWavePos(self, posX, posY);
-			self.lastTouchTime = Date.now();
+		},
+		setWavePos: {
+			value: function setWavePos(x, y, shaderParams, canvasInfo) {
+				var ratioPosX = x / canvasInfo.width;
+				var ratioPosY = 1 - y / canvasInfo.height;
+				var waveId = -1;
+				shaderParams.waveList.forEach(function (item, key) {
+					if (!item.on && waveId === -1) waveId = key;
+				});
+				if (waveId > -1) {
+					shaderParams.waveList[waveId].center = [ratioPosX, ratioPosY];
+					shaderParams.waveList[waveId].time = 0;
+					shaderParams.waveList[waveId].on = true;
+				}
+			}
 		}
-	},
-	setWavePos: function setWavePos(self, x, y) {
-		var ratioPosX = x / self.realWidth;
-		var ratioPosY = 1 - y / self.realHeight;
-		var waveId = -1;
-		self.waveList.forEach(function (item, key) {
-			if (!item.on && waveId === -1) waveId = key;
-		});
-		if (waveId > -1) {
-			self.waveList[waveId].center = [ratioPosX, ratioPosY];
-			self.waveList[waveId].time = 0;
-			self.waveList[waveId].on = true;
-		}
-	}
-};
+	});
+
+	return Shockwave;
+})();
+
+module.exports = Shockwave;
 
 /***/ }),
 /* 4 */
@@ -416,10 +429,11 @@ module.exports = {
 "use strict";
 
 
-module.exports = {
-    type: "x-shader/x-vertex",
-    source: "\n        precision mediump float;\n        attribute highp vec3 aVertexNormal;\n        attribute highp vec3 aVertexPosition;\n\n        uniform highp mat4 uNormalMatrix;\n\n        varying highp vec2 vTextureCoord;\n        varying highp vec3 vLighting;\n\n        const vec2 madd=vec2(0.5, 0.5);\n\n\n        void main(void){\n            gl_Position = vec4(aVertexPosition.xy, 0.0, 1.0);\n            vTextureCoord = aVertexPosition.xy*madd+madd;\n\n            highp vec3 ambientLight = vec3(0.6, 0.6, 0.6);\n            highp vec3 directionalLightColor = vec3(0.5, 0.5, 0.75);\n            highp vec3 directionalVector = vec3(0.85, 0.8, -0.40);\n\n            highp vec4 transformedNormal = uNormalMatrix * vec4(aVertexNormal, 1.0);\n\n            highp float directional = max(dot(transformedNormal.xyz, directionalVector), 0.0);\n            vLighting = ambientLight + (directionalLightColor * directional);\n        }\n    "
-};
+var _interopRequire = function (obj) { return obj && obj.__esModule ? obj["default"] : obj; };
+
+var Shockwave = _interopRequire(__webpack_require__(3));
+
+module.exports = { Shockwave: Shockwave };
 
 /***/ }),
 /* 5 */
@@ -430,15 +444,28 @@ module.exports = {
 
 var _interopRequire = function (obj) { return obj && obj.__esModule ? obj["default"] : obj; };
 
+var Default = _interopRequire(__webpack_require__(10));
+
+module.exports = { Default: Default };
+
+/***/ }),
+/* 6 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var _interopRequire = function (obj) { return obj && obj.__esModule ? obj["default"] : obj; };
+
 var _classCallCheck = function (instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } };
 
-var html2canvas = _interopRequire(__webpack_require__(7));
+var html2canvas = _interopRequire(__webpack_require__(8));
 
 //import DomToCanvas from './domToCanvas';
 
 var CanvasShader = _interopRequire(__webpack_require__(2));
 
-var Shapeshift = function Shapeshift(target) {
+var Shapeshift = function Shapeshift(target, fragmentShader, vertexShader, params) {
 	_classCallCheck(this, Shapeshift);
 
 	var action = function (item) {
@@ -452,7 +479,7 @@ var Shapeshift = function Shapeshift(target) {
 		html2canvas(item, {
 			onrendered: function onrendered(canvas) {
 				item.style.border = "none";
-				new CanvasShader({ parent: item, id: "canvas-wavify-" + Date.now(), hd: true, texture: canvas.toDataURL("png") });
+				new CanvasShader(item, canvas.toDataURL("png"), fragmentShader || "shockwave", vertexShader || "default", params);
 			}
 		});
 	};
@@ -464,7 +491,7 @@ var Shapeshift = function Shapeshift(target) {
 module.exports = Shapeshift;
 
 /***/ }),
-/* 6 */
+/* 7 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -479,10 +506,10 @@ var _classCallCheck = function (instance, Constructor) { if (!(instance instance
 var GlUtils = _interopRequire(__webpack_require__(0));
 
 var WebglEngine = (function () {
-	function WebglEngine(params) {
+	function WebglEngine(parent) {
 		_classCallCheck(this, WebglEngine);
 
-		GlUtils.setupCanvas(this, params);
+		GlUtils.setupCanvas(this, parent);
 	}
 
 	_createClass(WebglEngine, {
@@ -510,16 +537,38 @@ var WebglEngine = (function () {
 				}
 			}
 		},
+		draw: {
+			value: function draw() {}
+		},
+		drawObject: {
+			value: function drawObject(mesh, drawShaders) {
+				var ctx = this.ctx;
+				ctx.clear(ctx.COLOR_BUFFER_BIT | ctx.DEPTH_BUFFER_BIT);
+				ctx.useProgram(this.shaderProgram);
+				ctx.bindBuffer(ctx.ARRAY_BUFFER, mesh.vertexBuffer);
+				ctx.vertexAttribPointer(this.shaderProgram.vertexPositionAttribute, mesh.vertexBuffer.itemSize, ctx.FLOAT, false, 0, 0);
+				ctx.bindBuffer(ctx.ARRAY_BUFFER, mesh.normalBuffer);
+				ctx.vertexAttribPointer(this.shaderProgram.vertexNormalAttribute, mesh.normalBuffer.itemSize, ctx.FLOAT, false, 0, 0);
+				ctx.activeTexture(ctx.TEXTURE0);
+				ctx.bindTexture(ctx.TEXTURE_2D, mesh.texture);
+				ctx.uniform1i(this.shaderProgram.samplerUniform, 0);
+				ctx.uniform2fv(this.shaderProgram.screenRatio, [1, this.frameInfo.screenRatio]);
+				drawShaders();
+				ctx.bindBuffer(ctx.ELEMENT_ARRAY_BUFFER, mesh.indexBuffer);
+				ctx.drawElements(ctx.TRIANGLES, mesh.indexBuffer.numItems, ctx.UNSIGNED_SHORT, 0);
+			}
+		},
 		handleLoadedTexture: {
 			value: function handleLoadedTexture(texture) {
-				this.ctx.pixelStorei(this.ctx.UNPACK_FLIP_Y_WEBGL, true);
-				this.ctx.bindTexture(this.ctx.TEXTURE_2D, texture);
-				this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, texture.image);
-				this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MAG_FILTER, this.ctx.LINEAR);
-				this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MIN_FILTER, this.ctx.LINEAR);
-				this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_S, this.ctx.CLAMP_TO_EDGE);
-				this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_T, this.ctx.CLAMP_TO_EDGE);
-				this.ctx.bindTexture(this.ctx.TEXTURE_2D, null);
+				var ctx = this.ctx;
+				ctx.pixelStorei(ctx.UNPACK_FLIP_Y_WEBGL, true);
+				ctx.bindTexture(ctx.TEXTURE_2D, texture);
+				ctx.texImage2D(ctx.TEXTURE_2D, 0, ctx.RGBA, ctx.RGBA, ctx.UNSIGNED_BYTE, texture.image);
+				ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MAG_FILTER, ctx.LINEAR);
+				ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MIN_FILTER, ctx.LINEAR);
+				ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_S, ctx.CLAMP_TO_EDGE);
+				ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_T, ctx.CLAMP_TO_EDGE);
+				ctx.bindTexture(ctx.TEXTURE_2D, null);
 			}
 		},
 		initTexture: {
@@ -548,17 +597,35 @@ var WebglEngine = (function () {
 module.exports = WebglEngine;
 
 /***/ }),
-/* 7 */
+/* 8 */
 /***/ (function(module, exports) {
 
 module.exports = html2canvas;
 
 /***/ }),
-/* 8 */
+/* 9 */
 /***/ (function(module, exports, __webpack_require__) {
 
 module.exports = __webpack_require__(1);
 
+
+/***/ }),
+/* 10 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var _classCallCheck = function (instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } };
+
+var Default = function Default() {
+    _classCallCheck(this, Default);
+
+    this.type = "vertex";
+    this.source = "\n            precision mediump float;\n            attribute highp vec3 aVertexNormal;\n            attribute highp vec3 aVertexPosition;\n\n            uniform highp mat4 uNormalMatrix;\n\n            varying highp vec2 vTextureCoord;\n            varying highp vec3 vLighting;\n\n            const vec2 madd=vec2(0.5, 0.5);\n\n\n            void main(void){\n                gl_Position = vec4(aVertexPosition.xy, 0.0, 1.0);\n                vTextureCoord = aVertexPosition.xy*madd+madd;\n\n                highp vec3 ambientLight = vec3(0.6, 0.6, 0.6);\n                highp vec3 directionalLightColor = vec3(0.5, 0.5, 0.75);\n                highp vec3 directionalVector = vec3(0.85, 0.8, -0.40);\n\n                highp vec4 transformedNormal = uNormalMatrix * vec4(aVertexNormal, 1.0);\n\n                highp float directional = max(dot(transformedNormal.xyz, directionalVector), 0.0);\n                vLighting = ambientLight + (directionalLightColor * directional);\n            }\n        ";
+};
+
+module.exports = Default;
 
 /***/ })
 /******/ ]);

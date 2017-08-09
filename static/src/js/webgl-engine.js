@@ -1,8 +1,8 @@
 import GlUtils from './gl-utils.js';
 
 class WebglEngine{
-	constructor(params){
-		GlUtils.setupCanvas(this, params);
+	constructor(parent){
+		GlUtils.setupCanvas(this, parent);
 	}
 	checkFrameInterval(){
 		this.frameInfo.now = Date.now();
@@ -24,15 +24,33 @@ class WebglEngine{
 			}
 		}
 	}
+	draw(){}
+	drawObject(mesh, drawShaders){
+		var ctx = this.ctx;
+		ctx.clear(ctx.COLOR_BUFFER_BIT | ctx.DEPTH_BUFFER_BIT);
+		ctx.useProgram(this.shaderProgram);
+		ctx.bindBuffer(ctx.ARRAY_BUFFER, mesh.vertexBuffer);
+		ctx.vertexAttribPointer(this.shaderProgram.vertexPositionAttribute, mesh.vertexBuffer.itemSize, ctx.FLOAT, false, 0, 0);
+		ctx.bindBuffer(ctx.ARRAY_BUFFER, mesh.normalBuffer);
+		ctx.vertexAttribPointer(this.shaderProgram.vertexNormalAttribute, mesh.normalBuffer.itemSize, ctx.FLOAT, false, 0, 0);
+		ctx.activeTexture(ctx.TEXTURE0);
+		ctx.bindTexture(ctx.TEXTURE_2D, mesh.texture);
+		ctx.uniform1i(this.shaderProgram.samplerUniform, 0);
+		ctx.uniform2fv(this.shaderProgram.screenRatio, [1.0, this.frameInfo.screenRatio]);
+		drawShaders();
+		ctx.bindBuffer(ctx.ELEMENT_ARRAY_BUFFER, mesh.indexBuffer);
+		ctx.drawElements(ctx.TRIANGLES, mesh.indexBuffer.numItems, ctx.UNSIGNED_SHORT, 0);
+	}
 	handleLoadedTexture(texture){
-		this.ctx.pixelStorei(this.ctx.UNPACK_FLIP_Y_WEBGL, true);
-		this.ctx.bindTexture(this.ctx.TEXTURE_2D, texture);
-		this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, texture.image);
-		this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MAG_FILTER, this.ctx.LINEAR);
-		this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MIN_FILTER, this.ctx.LINEAR);
-		this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_S, this.ctx.CLAMP_TO_EDGE);
-		this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_T, this.ctx.CLAMP_TO_EDGE);
-		this.ctx.bindTexture(this.ctx.TEXTURE_2D, null);
+		var ctx = this.ctx;
+		ctx.pixelStorei(ctx.UNPACK_FLIP_Y_WEBGL, true);
+		ctx.bindTexture(ctx.TEXTURE_2D, texture);
+		ctx.texImage2D(ctx.TEXTURE_2D, 0, ctx.RGBA, ctx.RGBA, ctx.UNSIGNED_BYTE, texture.image);
+		ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MAG_FILTER, ctx.LINEAR);
+		ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MIN_FILTER, ctx.LINEAR);
+		ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_S, ctx.CLAMP_TO_EDGE);
+		ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_T, ctx.CLAMP_TO_EDGE);
+		ctx.bindTexture(ctx.TEXTURE_2D, null);
 	}
 	initTexture(object, url){
 		object.texture = this.ctx.createTexture();

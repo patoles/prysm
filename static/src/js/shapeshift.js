@@ -3,7 +3,7 @@ import html2canvas from 'html2canvas';
 import CanvasShader from './canvas-shader';
 
 class Shapeshift{
-	constructor(target){
+	constructor(target, fragmentShader, vertexShader, params){
         var action = (item) => {
 			var positionStyle = getComputedStyle(item)["position"];
 			if (positionStyle === "static" || positionStyle === "")
@@ -16,7 +16,7 @@ class Shapeshift{
 			html2canvas(item, {
 				onrendered: function(canvas) {
 					item.style.border = 'none';
-					new CanvasShader({parent:item, id:'canvas-wavify-' + Date.now(), hd:true, texture:canvas.toDataURL('png')});
+					new CanvasShader(item, canvas.toDataURL('png'), fragmentShader || 'shockwave', vertexShader || 'default', params);
 				}
 			});
 		}
