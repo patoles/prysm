@@ -7,8 +7,6 @@ export default class Water{
             attribute highp vec3 aVertexNormal;
             attribute highp vec3 aVertexPosition;
 
-            varying highp vec2 vTextureCoord;
-
             uniform float	u_amplitude;
             uniform float 	u_frequency;
             uniform float   u_time;
@@ -107,21 +105,18 @@ export default class Water{
                 return 2.2 * n_xyz;
             }
 
-            const vec2 madd=vec2(0.5, 0.5);
-
             void main() {
                 float displacement = u_amplitude * cnoise( u_frequency * aVertexPosition + u_time );
 
                 vec3 newPosition = aVertexPosition + aVertexNormal * displacement;
                 gl_Position = vec4(newPosition, 1.0);
-                vTextureCoord = newPosition.xy*madd+madd;
             }
         `;
     //                gl_Position = projectionMatrix * modelViewMatrix * vec4( newPosition, 1.0 );
     }
 	setParams(params){
 		var shaderParams = {};
-		shaderParams.amplitude = 10.0;
+		shaderParams.amplitude = 10;
         shaderParams.frequency = 0.05;
         shaderParams.time = 0.0;
         shaderParams.DELTA_TIME = 0;
@@ -143,6 +138,6 @@ export default class Water{
         var shaderParams = this.shaderParams;
         shaderParams.DELTA_TIME = Date.now() - shaderParams.LAST_TIME;
         shaderParams.LAST_TIME = Date.now();
-        shaderParams.time += shaderParams.DELTA_TIME / 1000;
+        shaderParams.time += shaderParams.DELTA_TIME / 10000;
 	}
 };
