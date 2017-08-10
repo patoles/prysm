@@ -4,19 +4,20 @@ import CanvasShader from './canvas-shader';
 
 class Shapeshift{
 	constructor(target, fragmentShader, vertexShader, params){
+		this.fragment = null;
+		this.vertex = null;
+		this.canvasInfo = null
         var action = (item) => {
 			var positionStyle = getComputedStyle(item)["position"];
 			if (positionStyle === "static" || positionStyle === "")
 				item.style.position = "relative";
-			/*
-				DomToCanvas.getCanvas(item).then(function(canvas){
-					new CanvasShader({parent:item, id:'canvas-wavify-' + Date.now(), hd:true, texture:canvas.toDataURL('png')});
-				});
-			*/
 			html2canvas(item, {
-				onrendered: function(canvas) {
+				onrendered: (canvas) => {
 					item.style.border = 'none';
-					new CanvasShader(item, canvas.toDataURL('png'), fragmentShader || 'shockwave', vertexShader || 'default', params);
+					var shader = new CanvasShader(item, canvas.toDataURL('png'), fragmentShader || 'shockwave', vertexShader || 'default', params);
+					this.fragment = shader.fragment;
+					this.vertex = shader.vertex;
+					this.canvasInfo = shader.canvasInfo;
 				}
 			});
 		}

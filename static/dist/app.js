@@ -63,7 +63,7 @@
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 9);
+/******/ 	return __webpack_require__(__webpack_require__.s = 10);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -126,6 +126,10 @@ var GlUtils = (function () {
 				self.canvas = canvas;
 				self.ctx = ctx;
 				self.shaderProgram = null;
+				self.canvasInfo = {
+					width: self.realWidth, height: self.realHeight,
+					center: { x: self.realWidth / 2, y: self.realHeight / 2 }
+				};
 			}
 		},
 		initMeshBuffers: {
@@ -207,11 +211,13 @@ module.exports = _GlUtils;
 
 var _interopRequire = function (obj) { return obj && obj.__esModule ? obj["default"] : obj; };
 
-var Shapeshift = _interopRequire(__webpack_require__(6));
+var Shapeshift = _interopRequire(__webpack_require__(7));
 
 var item = document.getElementsByClassName("wavify")[0];
-new Shapeshift(item, "shockwave", null, { speed: 0.02, x: 10.1, y: 0.8, z: 0.1 });
-//	new Shapeshift('wavify');
+var shape = new Shapeshift(item, "shockwave", null, { speed: 0.02, x: 10.1, y: 0.8, z: 0.1 });
+setInterval(function () {
+    shape.fragment.setWavePos(shape.canvasInfo.center);
+}, 2000);
 
 /***/ }),
 /* 2 */
@@ -230,7 +236,7 @@ var _inherits = function (subClass, superClass) { if (typeof superClass !== "fun
 
 var _classCallCheck = function (instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } };
 
-var WebglEngine = _interopRequire(__webpack_require__(7));
+var WebglEngine = _interopRequire(__webpack_require__(8));
 
 var GlUtils = _interopRequire(__webpack_require__(0));
 
@@ -245,13 +251,12 @@ var CanvasShader = (function (_WebglEngine) {
 		_get(Object.getPrototypeOf(CanvasShader.prototype), "constructor", this).call(this, parent);
 		fragment = fragment.charAt(0).toUpperCase() + fragment.slice(1);
 		vertex = vertex.charAt(0).toUpperCase() + vertex.slice(1);
-		this.fgShader = new fgShader[fragment]();
-		this.vcShader = new vcShader[vertex]();
-		this.shaderParams = {};
-		this.fgShader.setParams && this.fgShader.setParams(this.shaderParams, params);
-		this.vcShader.setParams && this.vcShader.setParams(this.shaderParams, params);
+		this.fragment = new fgShader[fragment](this.canvasInfo);
+		this.vertex = new vcShader[vertex](this.canvasInfo);
+		this.fragment.setParams && this.fragment.setParams(params);
+		this.vertex.setParams && this.vertex.setParams(params);
 		this.initClick(this.canvas);
-		this.initShaders(this.fgShader, this.vcShader);
+		this.initShaders(this.fragment, this.vertex);
 		this.meshes = { plan: { vertices: [-1, -1, 0, 1, -1, 0, 1, 1, 0, -1, 1, 0], vertexNormals: [0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1], textures: [0, 0, 0, 1, 0, 0, 1, 1], indices: [0, 1, 2, 0, 2, 3] } };
 		GlUtils.initMeshBuffers(this.ctx, this.meshes.plan);
 		this.initTexture(this.meshes.plan, texture);
@@ -263,8 +268,8 @@ var CanvasShader = (function (_WebglEngine) {
 		initShaders: {
 			value: function initShaders(fs, vs) {
 				GlUtils.initShaders(this, this.ctx, fs, vs);
-				fs.init && fs.init(this.ctx, this.shaderProgram, this.shaderParams, { width: this.realWidth, height: this.realHeight });
-				vs.init && vs.init(this.ctx, this.shaderProgram, this.shaderParams, { width: this.realWidth, height: this.realHeight });
+				fs.init && fs.init(this.ctx, this.shaderProgram);
+				vs.init && vs.init(this.ctx, this.shaderProgram);
 			}
 		},
 		draw: {
@@ -272,16 +277,16 @@ var CanvasShader = (function (_WebglEngine) {
 				var _this = this;
 
 				this.drawObject(this.meshes.plan, function () {
-					_this.fgShader.draw && _this.fgShader.draw(_this.ctx, _this.shaderProgram, _this.shaderParams);
-					_this.vcShader.draw && _this.vcShader.draw(_this.ctx, _this.shaderProgram, _this.shaderParams);
+					_this.fragment.draw && _this.fragment.draw(_this.ctx, _this.shaderProgram);
+					_this.vertex.draw && _this.vertex.draw(_this.ctx, _this.shaderProgram);
 				});
 				this.transform();
 			}
 		},
 		transform: {
 			value: function transform() {
-				this.fgShader.transform && this.fgShader.transform(this.shaderParams);
-				this.vcShader.transform && this.vcShader.transform(this.shaderParams);
+				this.fragment.transform && this.fragment.transform();
+				this.vertex.transform && this.vertex.transform();
 			}
 		},
 		initClick: {
@@ -292,14 +297,14 @@ var CanvasShader = (function (_WebglEngine) {
 		},
 		handleClick: {
 			value: function handleClick(event) {
-				this.fgShader.handleClick && this.fgShader.handleClick(event, this.shaderParams, { width: this.realWidth, height: this.realHeight });
-				this.vcShader.handleClick && this.vcShader.handleClick(event, this.shaderParams, { width: this.realWidth, height: this.realHeight });
+				this.fragment.handleClick && this.fragment.handleClick(event);
+				this.vertex.handleClick && this.vertex.handleClick(event);
 			}
 		},
 		handleTouchMove: {
 			value: function handleTouchMove(event) {
-				this.fgShader.handleTouchMove && this.fgShader.handleTouchMove(event, this.shaderParams, { width: this.realWidth, height: this.realHeight });
-				this.vcShader.handleTouchMove && this.vcShader.handleTouchMove(event, this.shaderParams, { width: this.realWidth, height: this.realHeight });
+				this.fragment.handleTouchMove && this.fragment.handleTouchMove(event);
+				this.vertex.handleTouchMove && this.vertex.handleTouchMove(event);
 			}
 		}
 	});
@@ -321,15 +326,17 @@ var _createClass = (function () { function defineProperties(target, props) { for
 var _classCallCheck = function (instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } };
 
 var Shockwave = (function () {
-	function Shockwave() {
+	function Shockwave(canvasInfo) {
 		_classCallCheck(this, Shockwave);
 
+		this.canvasInfo = canvasInfo;
 		this.type = "fragment", this.source = "\n\t\t\t#define MAX_WAVE_NBR 10\n\t\t\tprecision mediump float;\n\t\t\t\n\t\t\tvarying highp vec2 vTextureCoord;\n\t\t\tuniform sampler2D uSampler;\n\t\t\tuniform vec2 screenRatio;\n\t\t\t\n\t\t\tstruct waveStruct{\n\t\t\t\tvec2 center;\n\t\t\t\tfloat time;\n\t\t\t\tvec3 shockParams;\n\t\t\t\tbool hasShock;\n\t\t\t};\n\t\t\tuniform waveStruct wave[MAX_WAVE_NBR];\n\n\t\t\tvoid main(void){\n\t\t\t\tvec4 fragmentColor;\n\t\t\t\tfragmentColor = texture2D(uSampler, vTextureCoord);\n\n\t\t\t\tif (fragmentColor.a <= 0.1) discard;\n\n\t\t\t\tvec2 uv = vTextureCoord.xy;\n\t\t\t\tvec2 texCoord = uv;\n\n\t\t\t\tfor (int count=0;count < MAX_WAVE_NBR;count++)\n\t\t\t\t{\n\t\t\t\t\tfloat distance = distance(uv*screenRatio, wave[count].center*screenRatio);\n\t\t\t\t\tif ((distance <= (wave[count].time + wave[count].shockParams.z)) && (distance >= (wave[count].time - wave[count].shockParams.z)))\n\t\t\t\t\t{\n\t\t\t\t\t\tfloat diff = (distance - wave[count].time); \n\t\t\t\t\t\tfloat powDiff = 1.0 - pow(abs(diff*wave[count].shockParams.x), wave[count].shockParams.y); \n\t\t\t\t\t\tfloat diffTime = diff  * powDiff;\n\t\t\t\t\t\tvec2 diffUV = normalize((uv * screenRatio) - (wave[count].center * screenRatio)); \n\t\t\t\t\t\ttexCoord = uv + (diffUV * diffTime);\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t\tgl_FragColor = texture2D(uSampler, texCoord);\n\t\t\t}\n\t\t";
 	}
 
 	_createClass(Shockwave, {
 		setParams: {
-			value: function setParams(shaderParams, params) {
+			value: function setParams(params) {
+				var shaderParams = {};
 				shaderParams.WAVE_LIST_SIZE = 10;
 				shaderParams.WAVE_LIFESPAN = 1.5;
 				shaderParams.lastTouchTime = -1;
@@ -338,12 +345,12 @@ var Shockwave = (function () {
 				shaderParams.waveParams = { shockParams: shockParams, speed: speed };
 				shaderParams.waveList = [];
 				for (var x = 0; x < shaderParams.WAVE_LIST_SIZE; x++) shaderParams.waveList.push({ time: 0, center: [0, 0], on: false, shockParams: shaderParams.waveParams.shockParams, speed: shaderParams.waveParams.speed });
+				this.shaderParams = shaderParams;
 			}
 		},
 		init: {
-			value: function init(ctx, shaderProgram, shaderParams, canvasInfo) {
-				var _this = this;
-
+			value: function init(ctx, shaderProgram) {
+				var shaderParams = this.shaderParams;
 				shaderProgram.wave = new Array(10);
 				shaderParams.waveList.forEach(function (item, key) {
 					shaderProgram.wave[key] = {};
@@ -352,15 +359,11 @@ var Shockwave = (function () {
 					shaderProgram.wave[key].shockParams = ctx.getUniformLocation(shaderProgram, "wave[" + key + "].shockParams");
 					shaderProgram.wave[key].hasShock = ctx.getUniformLocation(shaderProgram, "wave[" + key + "].hasShock");
 				});
-				var posX = canvasInfo.width / 2;
-				var posY = canvasInfo.height / 2;
-				setInterval(function () {
-					_this.setWavePos(posX, posY, shaderParams, canvasInfo);
-				}, 1000);
 			}
 		},
 		draw: {
-			value: function draw(ctx, shaderProgram, shaderParams) {
+			value: function draw(ctx, shaderProgram) {
+				var shaderParams = this.shaderParams;
 				shaderParams.waveList.forEach(function (item, key) {
 					ctx.uniform1i(shaderProgram.wave[key].hasShock, item.on);
 					ctx.uniform2fv(shaderProgram.wave[key].center, item.center);
@@ -370,7 +373,8 @@ var Shockwave = (function () {
 			}
 		},
 		transform: {
-			value: function transform(shaderParams) {
+			value: function transform() {
+				var shaderParams = this.shaderParams;
 				shaderParams.waveList.forEach(function (item) {
 					if (item.on) {
 						item.time += item.speed;
@@ -384,26 +388,30 @@ var Shockwave = (function () {
 			}
 		},
 		handleClick: {
-			value: function handleClick(event, shaderParams, canvasInfo) {
+			value: function handleClick(event) {
+				var shaderParams = this.shaderParams;
 				var posX = event.clientX - event.target.getBoundingClientRect().left;
 				var posY = event.clientY - event.target.getBoundingClientRect().top;
-				this.setWavePos(posX, posY, shaderParams, canvasInfo);
+				this.setWavePos({ x: posX, y: posY });
 			}
 		},
 		handleTouchMove: {
-			value: function handleTouchMove(event, shaderParams, canvasInfo) {
+			value: function handleTouchMove(event) {
+				var shaderParams = this.shaderParams;
 				if (Date.now() - shaderParams.lastTouchTime > 100) {
 					var posX = event.touches[0].clientX - event.target.getBoundingClientRect().left;
 					var posY = event.touches[0].clientY - event.target.getBoundingClientRect().top;
-					this.setWavePos(posX, posY, shaderParams, canvasInfo);
+					this.setWavePos({ x: posX, y: posY });
 					shaderParams.lastTouchTime = Date.now();
 				}
 			}
 		},
 		setWavePos: {
-			value: function setWavePos(x, y, shaderParams, canvasInfo) {
-				var ratioPosX = x / canvasInfo.width;
-				var ratioPosY = 1 - y / canvasInfo.height;
+			value: function setWavePos(coord) {
+				var shaderParams = this.shaderParams;
+				var canvasInfo = this.canvasInfo;
+				var ratioPosX = coord.x / canvasInfo.width;
+				var ratioPosY = 1 - coord.y / canvasInfo.height;
 				var waveId = -1;
 				shaderParams.waveList.forEach(function (item, key) {
 					if (!item.on && waveId === -1) waveId = key;
@@ -444,7 +452,7 @@ module.exports = { Shockwave: Shockwave };
 
 var _interopRequire = function (obj) { return obj && obj.__esModule ? obj["default"] : obj; };
 
-var Default = _interopRequire(__webpack_require__(10));
+var Default = _interopRequire(__webpack_require__(6));
 
 module.exports = { Default: Default };
 
@@ -455,31 +463,52 @@ module.exports = { Default: Default };
 "use strict";
 
 
+var _classCallCheck = function (instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } };
+
+var Default = function Default() {
+    _classCallCheck(this, Default);
+
+    this.type = "vertex";
+    this.source = "\n            precision mediump float;\n            attribute highp vec3 aVertexNormal;\n            attribute highp vec3 aVertexPosition;\n\n            uniform highp mat4 uNormalMatrix;\n\n            varying highp vec2 vTextureCoord;\n            varying highp vec3 vLighting;\n\n            const vec2 madd=vec2(0.5, 0.5);\n\n\n            void main(void){\n                gl_Position = vec4(aVertexPosition.xy, 0.0, 1.0);\n                vTextureCoord = aVertexPosition.xy*madd+madd;\n\n                highp vec3 ambientLight = vec3(0.6, 0.6, 0.6);\n                highp vec3 directionalLightColor = vec3(0.5, 0.5, 0.75);\n                highp vec3 directionalVector = vec3(0.85, 0.8, -0.40);\n\n                highp vec4 transformedNormal = uNormalMatrix * vec4(aVertexNormal, 1.0);\n\n                highp float directional = max(dot(transformedNormal.xyz, directionalVector), 0.0);\n                vLighting = ambientLight + (directionalLightColor * directional);\n            }\n        ";
+};
+
+module.exports = Default;
+
+/***/ }),
+/* 7 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
 var _interopRequire = function (obj) { return obj && obj.__esModule ? obj["default"] : obj; };
 
 var _classCallCheck = function (instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } };
 
-var html2canvas = _interopRequire(__webpack_require__(8));
+var html2canvas = _interopRequire(__webpack_require__(9));
 
 //import DomToCanvas from './domToCanvas';
 
 var CanvasShader = _interopRequire(__webpack_require__(2));
 
 var Shapeshift = function Shapeshift(target, fragmentShader, vertexShader, params) {
+	var _this = this;
+
 	_classCallCheck(this, Shapeshift);
 
+	this.fragment = null;
+	this.vertex = null;
+	this.canvasInfo = null;
 	var action = function (item) {
 		var positionStyle = getComputedStyle(item).position;
 		if (positionStyle === "static" || positionStyle === "") item.style.position = "relative";
-		/*
-  	DomToCanvas.getCanvas(item).then(function(canvas){
-  		new CanvasShader({parent:item, id:'canvas-wavify-' + Date.now(), hd:true, texture:canvas.toDataURL('png')});
-  	});
-  */
 		html2canvas(item, {
-			onrendered: function onrendered(canvas) {
+			onrendered: function (canvas) {
 				item.style.border = "none";
-				new CanvasShader(item, canvas.toDataURL("png"), fragmentShader || "shockwave", vertexShader || "default", params);
+				var shader = new CanvasShader(item, canvas.toDataURL("png"), fragmentShader || "shockwave", vertexShader || "default", params);
+				_this.fragment = shader.fragment;
+				_this.vertex = shader.vertex;
+				_this.canvasInfo = shader.canvasInfo;
 			}
 		});
 	};
@@ -491,7 +520,7 @@ var Shapeshift = function Shapeshift(target, fragmentShader, vertexShader, param
 module.exports = Shapeshift;
 
 /***/ }),
-/* 7 */
+/* 8 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -597,35 +626,17 @@ var WebglEngine = (function () {
 module.exports = WebglEngine;
 
 /***/ }),
-/* 8 */
+/* 9 */
 /***/ (function(module, exports) {
 
 module.exports = html2canvas;
 
 /***/ }),
-/* 9 */
+/* 10 */
 /***/ (function(module, exports, __webpack_require__) {
 
 module.exports = __webpack_require__(1);
 
-
-/***/ }),
-/* 10 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var _classCallCheck = function (instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } };
-
-var Default = function Default() {
-    _classCallCheck(this, Default);
-
-    this.type = "vertex";
-    this.source = "\n            precision mediump float;\n            attribute highp vec3 aVertexNormal;\n            attribute highp vec3 aVertexPosition;\n\n            uniform highp mat4 uNormalMatrix;\n\n            varying highp vec2 vTextureCoord;\n            varying highp vec3 vLighting;\n\n            const vec2 madd=vec2(0.5, 0.5);\n\n\n            void main(void){\n                gl_Position = vec4(aVertexPosition.xy, 0.0, 1.0);\n                vTextureCoord = aVertexPosition.xy*madd+madd;\n\n                highp vec3 ambientLight = vec3(0.6, 0.6, 0.6);\n                highp vec3 directionalLightColor = vec3(0.5, 0.5, 0.75);\n                highp vec3 directionalVector = vec3(0.85, 0.8, -0.40);\n\n                highp vec4 transformedNormal = uNormalMatrix * vec4(aVertexNormal, 1.0);\n\n                highp float directional = max(dot(transformedNormal.xyz, directionalVector), 0.0);\n                vLighting = ambientLight + (directionalLightColor * directional);\n            }\n        ";
-};
-
-module.exports = Default;
 
 /***/ })
 /******/ ]);

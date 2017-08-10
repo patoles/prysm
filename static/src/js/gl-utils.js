@@ -42,6 +42,10 @@ class GlUtils{
 		self.canvas = canvas;
 		self.ctx = ctx;
 		self.shaderProgram = null;
+		self.canvasInfo = {
+			width:self.realWidth, height:self.realHeight,
+			center:{x:self.realWidth / 2, y:self.realHeight / 2}
+		};
 	}
 	initMeshBuffers(gl, mesh ){
 		mesh.normalBuffer = this.buildBuffer(gl, gl.ARRAY_BUFFER, mesh.vertexNormals, 3);
