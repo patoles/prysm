@@ -214,7 +214,7 @@ var _interopRequire = function (obj) { return obj && obj.__esModule ? obj["defau
 var Shapeshift = _interopRequire(__webpack_require__(7));
 
 var item = document.getElementsByClassName("wavify")[0];
-var shape = new Shapeshift(item, "shockwave", null, { speed: 0.02, x: 10.1, y: 0.8, z: 0.1 });
+var shape = new Shapeshift(item, "default", "water", { speed: 0.02, x: 10.1, y: 0.8, z: 0.1 });
 
 /***/ }),
 /* 2 */
@@ -253,7 +253,7 @@ var CanvasShader = (function (_WebglEngine) {
 		this.fragment.setParams && this.fragment.setParams(params);
 		this.vertex.setParams && this.vertex.setParams(params);
 		this.initClick(this.canvas);
-		this.initShaders(this.fragment, this.vertex);
+		this.initShaders();
 		this.meshes = { plan: { vertices: [-1, -1, 0, 1, -1, 0, 1, 1, 0, -1, 1, 0], vertexNormals: [0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1], textures: [0, 0, 0, 1, 0, 0, 1, 1], indices: [0, 1, 2, 0, 2, 3] } };
 		GlUtils.initMeshBuffers(this.ctx, this.meshes.plan);
 		this.initTexture(this.meshes.plan, texture);
@@ -263,10 +263,10 @@ var CanvasShader = (function (_WebglEngine) {
 
 	_createClass(CanvasShader, {
 		initShaders: {
-			value: function initShaders(fs, vs) {
-				GlUtils.initShaders(this, this.ctx, fs, vs);
-				fs.init && fs.init(this.ctx, this.shaderProgram);
-				vs.init && vs.init(this.ctx, this.shaderProgram);
+			value: function initShaders() {
+				GlUtils.initShaders(this, this.ctx, this.fragment, this.vertex);
+				this.fragment.init && this.fragment.init(this.ctx, this.shaderProgram);
+				this.vertex.init && this.vertex.init(this.ctx, this.shaderProgram);
 			}
 		},
 		draw: {
@@ -436,9 +436,11 @@ module.exports = Shockwave;
 
 var _interopRequire = function (obj) { return obj && obj.__esModule ? obj["default"] : obj; };
 
+var Default = _interopRequire(__webpack_require__(13));
+
 var Shockwave = _interopRequire(__webpack_require__(3));
 
-module.exports = { Shockwave: Shockwave };
+module.exports = { Default: Default, Shockwave: Shockwave };
 
 /***/ }),
 /* 5 */
@@ -451,7 +453,9 @@ var _interopRequire = function (obj) { return obj && obj.__esModule ? obj["defau
 
 var Default = _interopRequire(__webpack_require__(6));
 
-module.exports = { Default: Default };
+var Water = _interopRequire(__webpack_require__(12));
+
+module.exports = { Default: Default, Water: Water };
 
 /***/ }),
 /* 6 */
@@ -635,6 +639,86 @@ module.exports = html2canvas;
 
 module.exports = __webpack_require__(1);
 
+
+/***/ }),
+/* 11 */,
+/* 12 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var _createClass = (function () { function defineProperties(target, props) { for (var key in props) { var prop = props[key]; prop.configurable = true; if (prop.value) prop.writable = true; } Object.defineProperties(target, props); } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
+
+var _classCallCheck = function (instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } };
+
+var Water = (function () {
+    function Water() {
+        _classCallCheck(this, Water);
+
+        this.type = "vertex";
+        this.source = "\n            precision highp float;\n\n            attribute highp vec3 aVertexNormal;\n            attribute highp vec3 aVertexPosition;\n\n            varying highp vec2 vTextureCoord;\n\n            uniform float\tu_amplitude;\n            uniform float \tu_frequency;\n            uniform float   u_time;\n\n            vec3 mod289(vec3 x)\n            {\n                return x - floor(x * (1.0 / 289.0)) * 289.0;\n            }\n\n            vec4 mod289(vec4 x)\n            {\n                return x - floor(x * (1.0 / 289.0)) * 289.0;\n            }\n\n            vec4 permute(vec4 x)\n            {\n                return mod289(((x*34.0)+1.0)*x);\n            }\n\n            vec4 taylorInvSqrt(vec4 r)\n            {\n                return 1.79284291400159 - 0.85373472095314 * r;\n            }\n\n            vec3 fade(vec3 t) {\n                return t*t*t*(t*(t*6.0-15.0)+10.0);\n            }\n\n            // Classic Perlin noise\n            float cnoise(vec3 P)\n            {\n                vec3 Pi0 = floor(P); // Integer part for indexing\n                vec3 Pi1 = Pi0 + vec3(1.0); // Integer part + 1\n                Pi0 = mod289(Pi0);\n                Pi1 = mod289(Pi1);\n                vec3 Pf0 = fract(P); // Fractional part for interpolation\n                vec3 Pf1 = Pf0 - vec3(1.0); // Fractional part - 1.0\n                vec4 ix = vec4(Pi0.x, Pi1.x, Pi0.x, Pi1.x);\n                vec4 iy = vec4(Pi0.yy, Pi1.yy);\n                vec4 iz0 = Pi0.zzzz;\n                vec4 iz1 = Pi1.zzzz;\n\n                vec4 ixy = permute(permute(ix) + iy);\n                vec4 ixy0 = permute(ixy + iz0);\n                vec4 ixy1 = permute(ixy + iz1);\n\n                vec4 gx0 = ixy0 * (1.0 / 7.0);\n                vec4 gy0 = fract(floor(gx0) * (1.0 / 7.0)) - 0.5;\n                gx0 = fract(gx0);\n                vec4 gz0 = vec4(0.5) - abs(gx0) - abs(gy0);\n                vec4 sz0 = step(gz0, vec4(0.0));\n                gx0 -= sz0 * (step(0.0, gx0) - 0.5);\n                gy0 -= sz0 * (step(0.0, gy0) - 0.5);\n\n                vec4 gx1 = ixy1 * (1.0 / 7.0);\n                vec4 gy1 = fract(floor(gx1) * (1.0 / 7.0)) - 0.5;\n                gx1 = fract(gx1);\n                vec4 gz1 = vec4(0.5) - abs(gx1) - abs(gy1);\n                vec4 sz1 = step(gz1, vec4(0.0));\n                gx1 -= sz1 * (step(0.0, gx1) - 0.5);\n                gy1 -= sz1 * (step(0.0, gy1) - 0.5);\n\n                vec3 g000 = vec3(gx0.x,gy0.x,gz0.x);\n                vec3 g100 = vec3(gx0.y,gy0.y,gz0.y);\n                vec3 g010 = vec3(gx0.z,gy0.z,gz0.z);\n                vec3 g110 = vec3(gx0.w,gy0.w,gz0.w);\n                vec3 g001 = vec3(gx1.x,gy1.x,gz1.x);\n                vec3 g101 = vec3(gx1.y,gy1.y,gz1.y);\n                vec3 g011 = vec3(gx1.z,gy1.z,gz1.z);\n                vec3 g111 = vec3(gx1.w,gy1.w,gz1.w);\n\n                vec4 norm0 = taylorInvSqrt(vec4(dot(g000, g000), dot(g010, g010), dot(g100, g100), dot(g110, g110)));\n                g000 *= norm0.x;\n                g010 *= norm0.y;\n                g100 *= norm0.z;\n                g110 *= norm0.w;\n                vec4 norm1 = taylorInvSqrt(vec4(dot(g001, g001), dot(g011, g011), dot(g101, g101), dot(g111, g111)));\n                g001 *= norm1.x;\n                g011 *= norm1.y;\n                g101 *= norm1.z;\n                g111 *= norm1.w;\n\n                float n000 = dot(g000, Pf0);\n                float n100 = dot(g100, vec3(Pf1.x, Pf0.yz));\n                float n010 = dot(g010, vec3(Pf0.x, Pf1.y, Pf0.z));\n                float n110 = dot(g110, vec3(Pf1.xy, Pf0.z));\n                float n001 = dot(g001, vec3(Pf0.xy, Pf1.z));\n                float n101 = dot(g101, vec3(Pf1.x, Pf0.y, Pf1.z));\n                float n011 = dot(g011, vec3(Pf0.x, Pf1.yz));\n                float n111 = dot(g111, Pf1);\n\n                vec3 fade_xyz = fade(Pf0);\n                vec4 n_z = mix(vec4(n000, n100, n010, n110), vec4(n001, n101, n011, n111), fade_xyz.z);\n                vec2 n_yz = mix(n_z.xy, n_z.zw, fade_xyz.y);\n                float n_xyz = mix(n_yz.x, n_yz.y, fade_xyz.x);\n                return 2.2 * n_xyz;\n            }\n\n            const vec2 madd=vec2(0.5, 0.5);\n\n            void main() {\n                float displacement = u_amplitude * cnoise( u_frequency * aVertexPosition + u_time );\n\n                vec3 newPosition = aVertexPosition + aVertexNormal * displacement;\n                gl_Position = vec4(newPosition, 1.0);\n                vTextureCoord = newPosition.xy*madd+madd;\n            }\n        ";
+        //                gl_Position = projectionMatrix * modelViewMatrix * vec4( newPosition, 1.0 );
+    }
+
+    _createClass(Water, {
+        setParams: {
+            value: function setParams(params) {
+                var shaderParams = {};
+                shaderParams.amplitude = 10;
+                shaderParams.frequency = 0.05;
+                shaderParams.time = 0;
+                shaderParams.DELTA_TIME = 0;
+                shaderParams.LAST_TIME = Date.now();
+                this.shaderParams = shaderParams;
+            }
+        },
+        init: {
+            value: function init(ctx, shaderProgram) {
+                shaderProgram.u_amplitude = ctx.getUniformLocation(shaderProgram, "u_amplitude");
+                shaderProgram.u_frequency = ctx.getUniformLocation(shaderProgram, "u_frequency");
+                shaderProgram.u_time = ctx.getUniformLocation(shaderProgram, "u_time");
+            }
+        },
+        draw: {
+            value: function draw(ctx, shaderProgram) {
+                var shaderParams = this.shaderParams;
+                ctx.uniform1f(shaderProgram.u_amplitude, shaderParams.amplitude);
+                ctx.uniform1f(shaderProgram.u_frequency, shaderParams.frequency);
+                ctx.uniform1f(shaderProgram.u_time, shaderParams.time);
+            }
+        },
+        transform: {
+            value: function transform() {
+                var shaderParams = this.shaderParams;
+                shaderParams.DELTA_TIME = Date.now() - shaderParams.LAST_TIME;
+                shaderParams.LAST_TIME = Date.now();
+                shaderParams.time += shaderParams.DELTA_TIME / 1000;
+            }
+        }
+    });
+
+    return Water;
+})();
+
+module.exports = Water;
+
+/***/ }),
+/* 13 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var _classCallCheck = function (instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } };
+
+var Default = function Default() {
+	_classCallCheck(this, Default);
+
+	this.type = "fragment", this.source = "\n\t\t\tvoid main(void){\n\t\t\t\tgl_FragColor = vec4(0.0, 0.0, 0.8, 1.0);\n\t\t\t}\n\t\t";
+};
+
+module.exports = Default;
 
 /***/ })
 /******/ ]);

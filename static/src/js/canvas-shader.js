@@ -13,15 +13,15 @@ class CanvasShader extends WebglEngine{
 		this.fragment.setParams && this.fragment.setParams(params);
 		this.vertex.setParams && this.vertex.setParams(params);
 		this.initClick(this.canvas);
-		this.initShaders(this.fragment, this.vertex);
+		this.initShaders();
 		this.meshes = {"plan":{"vertices":[-1,-1,0,1,-1,0,1,1,0,-1,1,0],"vertexNormals":[0,0,1,0,0,1,0,0,1,0,0,1],"textures":[0,0,0,1,0,0,1,1],"indices":[0,1,2,0,2,3]}};
 		GlUtils.initMeshBuffers(this.ctx, this.meshes.plan);
 		this.initTexture(this.meshes.plan, texture);
 	}
-	initShaders(fs, vs){
-		GlUtils.initShaders(this, this.ctx, fs, vs);
-		fs.init && fs.init(this.ctx, this.shaderProgram);
-		vs.init && vs.init(this.ctx, this.shaderProgram);
+	initShaders(){
+		GlUtils.initShaders(this, this.ctx, this.fragment, this.vertex);
+		this.fragment.init && this.fragment.init(this.ctx, this.shaderProgram);
+		this.vertex.init && this.vertex.init(this.ctx, this.shaderProgram);
 	}
 	draw(){
 		this.drawObject(this.meshes.plan, () => {
