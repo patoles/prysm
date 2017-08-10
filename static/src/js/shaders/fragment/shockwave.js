@@ -7,6 +7,7 @@ export default class Shockwave{
 			precision mediump float;
 			
 			varying highp vec2 vTextureCoord;
+			varying highp vec3 vLighting;
 			uniform sampler2D uSampler;
 			uniform vec2 screenRatio;
 			
@@ -39,11 +40,12 @@ export default class Shockwave{
 						texCoord = uv + (diffUV * diffTime);
 					}
 				}
-				gl_FragColor = texture2D(uSampler, texCoord);
+				vec4 resFragmentColor = texture2D(uSampler, texCoord);
+				gl_FragColor = vec4(resFragmentColor.rgb * vLighting, resFragmentColor.a);
 			}
 		`;
 	}
-    setParams(params){
+	setParams(params){
 		var shaderParams = {};
 		shaderParams.WAVE_LIST_SIZE = 10;
         shaderParams.WAVE_LIFESPAN = 1.5;

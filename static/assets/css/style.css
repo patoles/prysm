@@ -58,8 +58,8 @@ html, body{
 	width:270px;
 	height:270px;
 	border-radius: 600px;
-/*	background-image:url('../img/speaker.png');*/
-	background-image:url('http://qn-curio-image.curio.im/guerlain/background.png');
+	background-image:url('../img/speaker.png');
+/*	background-image:url('http://qn-curio-image.curio.im/guerlain/background.png');*/
 	-webkit-background-size:100% 100%;
 	background-size:100% 100%;
 	position:absolute;

@@ -12,6 +12,7 @@ class Shapeshift{
 			if (positionStyle === "static" || positionStyle === "")
 				item.style.position = "relative";
 			html2canvas(item, {
+				useCORS:true,
 				onrendered: (canvas) => {
 					item.style.border = 'none';
 					var shader = new CanvasShader(item, canvas.toDataURL('png'), fragmentShader || 'shockwave', vertexShader || 'default', params);
