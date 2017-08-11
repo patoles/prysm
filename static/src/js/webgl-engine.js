@@ -28,6 +28,12 @@ class WebglEngine{
 	drawObject(mesh, drawShaders){
 		var ctx = this.ctx;
 		ctx.clear(ctx.COLOR_BUFFER_BIT | ctx.DEPTH_BUFFER_BIT);
+		var perspectiveMatrix = GlUtils.makePerspective(80, this.realWidth/this.realHeight, 0.1, 100.0);
+		GlUtils.loadIdentity();
+		GlUtils.mvPushMatrix();
+		mesh.translation && GlUtils.mvTranslate(mesh.translation);
+		mesh.scale && GlUtils.mvScale([mesh.scale[0],mesh.scale[1],mesh.scale[2]]);
+
 		ctx.useProgram(this.shaderProgram);
 		ctx.bindBuffer(ctx.ARRAY_BUFFER, mesh.vertexBuffer);
 		ctx.vertexAttribPointer(this.shaderProgram.vertexPositionAttribute, mesh.vertexBuffer.itemSize, ctx.FLOAT, false, 0, 0);
@@ -39,8 +45,10 @@ class WebglEngine{
 		ctx.uniform2fv(this.shaderProgram.screenRatio, [1.0, this.frameInfo.screenRatio]);
 		drawShaders();
 		ctx.bindBuffer(ctx.ELEMENT_ARRAY_BUFFER, mesh.indexBuffer);
+		GlUtils.setMatrixUniforms(ctx, this.shaderProgram, perspectiveMatrix);
 		ctx.drawElements(ctx.TRIANGLES, mesh.indexBuffer.numItems, ctx.UNSIGNED_SHORT, 0);
-	}
+		GlUtils.mvPopMatrix();
+}
 	handleLoadedTexture(texture){
 		var ctx = this.ctx;
 		ctx.pixelStorei(ctx.UNPACK_FLIP_Y_WEBGL, true);

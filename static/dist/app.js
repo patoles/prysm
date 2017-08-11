@@ -77,9 +77,62 @@ var _createClass = (function () { function defineProperties(target, props) { for
 
 var _classCallCheck = function (instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } };
 
+Matrix.Translation = function (v) {
+	if (v.elements.length == 2) {
+		var r = Matrix.I(3);
+		r.elements[2][0] = v.elements[0];
+		r.elements[2][1] = v.elements[1];
+		return r;
+	}
+	if (v.elements.length == 3) {
+		var r = Matrix.I(4);
+		r.elements[0][3] = v.elements[0];
+		r.elements[1][3] = v.elements[1];
+		r.elements[2][3] = v.elements[2];
+		return r;
+	}
+	throw "Invalid length for Translation";
+};
+
+Matrix.prototype.flatten = function () {
+	var result = [];
+	if (this.elements.length == 0) return [];
+
+	for (var j = 0; j < this.elements[0].length; j++) for (var i = 0; i < this.elements.length; i++) result.push(this.elements[i][j]);
+	return result;
+};
+
+Matrix.prototype.ensure4x4 = function () {
+	if (this.elements.length == 4 && this.elements[0].length == 4) return this;
+
+	if (this.elements.length > 4 || this.elements[0].length > 4) return null;
+	for (var i = 0; i < this.elements.length; i++) {
+		for (var j = this.elements[i].length; j < 4; j++) {
+			if (i == j) this.elements[i].push(1);else this.elements[i].push(0);
+		}
+	}
+	for (var i = this.elements.length; i < 4; i++) {
+		if (i == 0) this.elements.push([1, 0, 0, 0]);else if (i == 1) this.elements.push([0, 1, 0, 0]);else if (i == 2) this.elements.push([0, 0, 1, 0]);else if (i == 3) this.elements.push([0, 0, 0, 1]);
+	}
+	return this;
+};
+
+Matrix.prototype.make3x3 = function () {
+	if (this.elements.length != 4 || this.elements[0].length != 4) return null;
+
+	return Matrix.create([[this.elements[0][0], this.elements[0][1], this.elements[0][2]], [this.elements[1][0], this.elements[1][1], this.elements[1][2]], [this.elements[2][0], this.elements[2][1], this.elements[2][2]]]);
+};
+
+Vector.prototype.flatten = function () {
+	return this.elements;
+};
+
 var GlUtils = (function () {
 	function GlUtils() {
 		_classCallCheck(this, GlUtils);
+
+		this.mvMatrixStack = [];
+		this.mvMatrix = [];
 	}
 
 	_createClass(GlUtils, {
@@ -192,6 +245,170 @@ var GlUtils = (function () {
 					return false;
 				}
 			}
+		},
+		mht: {
+			value: function mht(m) {
+				var s = "";
+				if (m.length == 16) {
+					for (var i = 0; i < 4; i++) {
+						s += "<span style='font-family: monospace'>[" + m[i * 4 + 0].toFixed(4) + "," + m[i * 4 + 1].toFixed(4) + "," + m[i * 4 + 2].toFixed(4) + "," + m[i * 4 + 3].toFixed(4) + "]</span><br>";
+					}
+				} else if (m.length == 9) {
+					for (var i = 0; i < 3; i++) {
+						s += "<span style='font-family: monospace'>[" + m[i * 3 + 0].toFixed(4) + "," + m[i * 3 + 1].toFixed(4) + "," + m[i * 3 + 2].toFixed(4) + "]</font><br>";
+					}
+				} else {
+					return m.toString();
+				}
+				return s;
+			}
+		},
+		makeLookAt: {
+			value: function makeLookAt(ex, ey, ez, cx, cy, cz, ux, uy, uz) {
+				var eye = $V([ex, ey, ez]);
+				var center = $V([cx, cy, cz]);
+				var up = $V([ux, uy, uz]);
+
+				var mag;
+
+				var z = eye.subtract(center).toUnitVector();
+				var x = up.cross(z).toUnitVector();
+				var y = z.cross(x).toUnitVector();
+
+				var m = $M([[x.e(1), x.e(2), x.e(3), 0], [y.e(1), y.e(2), y.e(3), 0], [z.e(1), z.e(2), z.e(3), 0], [0, 0, 0, 1]]);
+
+				var t = $M([[1, 0, 0, -ex], [0, 1, 0, -ey], [0, 0, 1, -ez], [0, 0, 0, 1]]);
+				return m.x(t);
+			}
+		},
+		makePerspective: {
+			value: function makePerspective(fovy, aspect, znear, zfar) {
+				var ymax = znear * Math.tan(fovy * Math.PI / 360);
+				var ymin = -ymax;
+				var xmin = ymin * aspect;
+				var xmax = ymax * aspect;
+
+				return this.makeFrustum(xmin, xmax, ymin, ymax, znear, zfar);
+			}
+		},
+		makeFrustum: {
+			value: function makeFrustum(left, right, bottom, top, znear, zfar) {
+				var X = 2 * znear / (right - left);
+				var Y = 2 * znear / (top - bottom);
+				var A = (right + left) / (right - left);
+				var B = (top + bottom) / (top - bottom);
+				var C = -(zfar + znear) / (zfar - znear);
+				var D = -2 * zfar * znear / (zfar - znear);
+
+				return $M([[X, 0, A, 0], [0, Y, B, 0], [0, 0, C, D], [0, 0, -1, 0]]);
+			}
+		},
+		makeOrtho: {
+			value: function makeOrtho(left, right, bottom, top, znear, zfar) {
+				var tx = -(right + left) / (right - left);
+				var ty = -(top + bottom) / (top - bottom);
+				var tz = -(zfar + znear) / (zfar - znear);
+
+				return $M([[2 / (right - left), 0, 0, tx], [0, 2 / (top - bottom), 0, ty], [0, 0, -2 / (zfar - znear), tz], [0, 0, 0, 1]]);
+			}
+		},
+		loadIdentity: {
+			value: function loadIdentity() {
+				this.mvMatrix = Matrix.I(4);
+			}
+		},
+		multMatrix: {
+			value: function multMatrix(m) {
+				this.mvMatrix = this.mvMatrix.x(m);
+			}
+		},
+		scale: {
+			value: function scale(v) {
+				var result = this.mvMatrix;
+				console.log(result);
+				var m = result.m;
+
+				result[0][0] = v[0];
+				result[0][1] = 0;
+				result[0][2] = 0;
+				result[0][3] = 0;
+
+				result[1][0] = 0;
+				result[1][1] = v[1];
+				result[1][2] = 0;
+				result[1][3] = 0;
+
+				result[2][0] = 0;
+				result[2][1] = 0;
+				result[2][2] = v[2];
+				result[2][3] = 0;
+
+				result[3][0] = 0;
+				result[3][1] = 0;
+				result[3][2] = 0;
+				result[3][3] = v[3];
+				this.mvMatrix = result;
+			}
+		},
+		mvTranslate: {
+			value: function mvTranslate(v) {
+				this.multMatrix(Matrix.Translation($V([v[0], v[1], v[2]])).ensure4x4());
+			}
+		},
+		setMatrixUniforms: {
+			value: function setMatrixUniforms(gl, shaderProgram, perspectiveMatrix) {
+				var pUniform = gl.getUniformLocation(shaderProgram, "uPMatrix");
+				gl.uniformMatrix4fv(pUniform, false, new Float32Array(perspectiveMatrix.flatten()));
+				var mvUniform = gl.getUniformLocation(shaderProgram, "uMVMatrix");
+				gl.uniformMatrix4fv(mvUniform, false, new Float32Array(this.mvMatrix.flatten()));
+				var normalMatrix = this.mvMatrix.inverse();
+				normalMatrix = normalMatrix.transpose();
+				var nUniform = gl.getUniformLocation(shaderProgram, "uNormalMatrix");
+				gl.uniformMatrix4fv(nUniform, false, new Float32Array(normalMatrix.flatten()));
+			}
+		},
+		mvPushMatrix: {
+			value: function mvPushMatrix(m) {
+				if (m) {
+					this.mvMatrixStack.push(m.dup());
+					mvMatrix = m.dup();
+				} else {
+					this.mvMatrixStack.push(this.mvMatrix.dup());
+				}
+			}
+		},
+		mvPopMatrix: {
+			value: function mvPopMatrix() {
+				if (!this.mvMatrixStack.length) {
+					throw "Can't pop from an empty matrix stack.";
+				}
+				this.mvMatrix = this.mvMatrixStack.pop();
+				return this.mvMatrix;
+			}
+		},
+		mvRotate: {
+			value: function mvRotate(angle, v) {
+				var inRadians = angle * Math.PI / 180;
+				var m = Matrix.Rotation(inRadians, $V([v[0], v[1], v[2]])).ensure4x4();
+				this.multMatrix(m);
+			}
+		},
+		mvRotateMultiple: {
+			value: function mvRotateMultiple(angleA, vA, angleB, vB) {
+				var inRadians = angleA * Math.PI / 180;
+				var mA = Matrix.Rotation(inRadians, $V([vA[0], vA[1], vA[2]])).ensure4x4();
+				inRadians = angleB * Math.PI / 180;
+				var mB = Matrix.Rotation(inRadians, $V([vB[0], vB[1], vB[2]])).ensure4x4();
+				var m = mA.x(mB);
+				this.multMatrix(m);
+			}
+		},
+		mvScale: {
+			value: function mvScale(size) {
+				var m = Matrix.I(4);
+				m.elements = [[size[0], 0, 0, 0], [0, size[1], 0, 0], [0, 0, size[2], 0], [0, 0, 0, 1]];
+				this.multMatrix(m);
+			}
 		}
 	});
 
@@ -254,7 +471,7 @@ var CanvasShader = (function (_WebglEngine) {
 		this.vertex.setParams && this.vertex.setParams(params);
 		this.initClick(this.canvas);
 		this.initShaders();
-		this.meshes = { plan: { vertices: [-1, -1, 0, 1, -1, 0, 1, 1, 0, -1, 1, 0], vertexNormals: [0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1], textures: [0, 0, 0, 1, 0, 0, 1, 1], indices: [0, 1, 2, 0, 2, 3] } };
+		this.meshes = { plan: { vertices: [-1, -1, 0, 1, -1, 0, 1, 1, 0, -1, 1, 0], vertexNormals: [0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1], textures: [0, 0, 0, 1, 0, 0, 1, 1], indices: [0, 1, 2, 0, 2, 3], translation: [0, 0, -1] } };
 		GlUtils.initMeshBuffers(this.ctx, this.meshes.plan);
 		this.initTexture(this.meshes.plan, texture);
 	}
@@ -575,6 +792,12 @@ var WebglEngine = (function () {
 			value: function drawObject(mesh, drawShaders) {
 				var ctx = this.ctx;
 				ctx.clear(ctx.COLOR_BUFFER_BIT | ctx.DEPTH_BUFFER_BIT);
+				var perspectiveMatrix = GlUtils.makePerspective(80, this.realWidth / this.realHeight, 0.1, 100);
+				GlUtils.loadIdentity();
+				GlUtils.mvPushMatrix();
+				mesh.translation && GlUtils.mvTranslate(mesh.translation);
+				mesh.scale && GlUtils.mvScale([mesh.scale[0], mesh.scale[1], mesh.scale[2]]);
+
 				ctx.useProgram(this.shaderProgram);
 				ctx.bindBuffer(ctx.ARRAY_BUFFER, mesh.vertexBuffer);
 				ctx.vertexAttribPointer(this.shaderProgram.vertexPositionAttribute, mesh.vertexBuffer.itemSize, ctx.FLOAT, false, 0, 0);
@@ -586,7 +809,9 @@ var WebglEngine = (function () {
 				ctx.uniform2fv(this.shaderProgram.screenRatio, [1, this.frameInfo.screenRatio]);
 				drawShaders();
 				ctx.bindBuffer(ctx.ELEMENT_ARRAY_BUFFER, mesh.indexBuffer);
+				GlUtils.setMatrixUniforms(ctx, this.shaderProgram, perspectiveMatrix);
 				ctx.drawElements(ctx.TRIANGLES, mesh.indexBuffer.numItems, ctx.UNSIGNED_SHORT, 0);
+				GlUtils.mvPopMatrix();
 			}
 		},
 		handleLoadedTexture: {
@@ -657,7 +882,7 @@ var Water = (function () {
         _classCallCheck(this, Water);
 
         this.type = "vertex";
-        this.source = "\n            precision highp float;\n\n            attribute highp vec3 aVertexNormal;\n            attribute highp vec3 aVertexPosition;\n\n            uniform float\tu_amplitude;\n            uniform float \tu_frequency;\n            uniform float   u_time;\n\n            vec3 mod289(vec3 x)\n            {\n                return x - floor(x * (1.0 / 289.0)) * 289.0;\n            }\n\n            vec4 mod289(vec4 x)\n            {\n                return x - floor(x * (1.0 / 289.0)) * 289.0;\n            }\n\n            vec4 permute(vec4 x)\n            {\n                return mod289(((x*34.0)+1.0)*x);\n            }\n\n            vec4 taylorInvSqrt(vec4 r)\n            {\n                return 1.79284291400159 - 0.85373472095314 * r;\n            }\n\n            vec3 fade(vec3 t) {\n                return t*t*t*(t*(t*6.0-15.0)+10.0);\n            }\n\n            // Classic Perlin noise\n            float cnoise(vec3 P)\n            {\n                vec3 Pi0 = floor(P); // Integer part for indexing\n                vec3 Pi1 = Pi0 + vec3(1.0); // Integer part + 1\n                Pi0 = mod289(Pi0);\n                Pi1 = mod289(Pi1);\n                vec3 Pf0 = fract(P); // Fractional part for interpolation\n                vec3 Pf1 = Pf0 - vec3(1.0); // Fractional part - 1.0\n                vec4 ix = vec4(Pi0.x, Pi1.x, Pi0.x, Pi1.x);\n                vec4 iy = vec4(Pi0.yy, Pi1.yy);\n                vec4 iz0 = Pi0.zzzz;\n                vec4 iz1 = Pi1.zzzz;\n\n                vec4 ixy = permute(permute(ix) + iy);\n                vec4 ixy0 = permute(ixy + iz0);\n                vec4 ixy1 = permute(ixy + iz1);\n\n                vec4 gx0 = ixy0 * (1.0 / 7.0);\n                vec4 gy0 = fract(floor(gx0) * (1.0 / 7.0)) - 0.5;\n                gx0 = fract(gx0);\n                vec4 gz0 = vec4(0.5) - abs(gx0) - abs(gy0);\n                vec4 sz0 = step(gz0, vec4(0.0));\n                gx0 -= sz0 * (step(0.0, gx0) - 0.5);\n                gy0 -= sz0 * (step(0.0, gy0) - 0.5);\n\n                vec4 gx1 = ixy1 * (1.0 / 7.0);\n                vec4 gy1 = fract(floor(gx1) * (1.0 / 7.0)) - 0.5;\n                gx1 = fract(gx1);\n                vec4 gz1 = vec4(0.5) - abs(gx1) - abs(gy1);\n                vec4 sz1 = step(gz1, vec4(0.0));\n                gx1 -= sz1 * (step(0.0, gx1) - 0.5);\n                gy1 -= sz1 * (step(0.0, gy1) - 0.5);\n\n                vec3 g000 = vec3(gx0.x,gy0.x,gz0.x);\n                vec3 g100 = vec3(gx0.y,gy0.y,gz0.y);\n                vec3 g010 = vec3(gx0.z,gy0.z,gz0.z);\n                vec3 g110 = vec3(gx0.w,gy0.w,gz0.w);\n                vec3 g001 = vec3(gx1.x,gy1.x,gz1.x);\n                vec3 g101 = vec3(gx1.y,gy1.y,gz1.y);\n                vec3 g011 = vec3(gx1.z,gy1.z,gz1.z);\n                vec3 g111 = vec3(gx1.w,gy1.w,gz1.w);\n\n                vec4 norm0 = taylorInvSqrt(vec4(dot(g000, g000), dot(g010, g010), dot(g100, g100), dot(g110, g110)));\n                g000 *= norm0.x;\n                g010 *= norm0.y;\n                g100 *= norm0.z;\n                g110 *= norm0.w;\n                vec4 norm1 = taylorInvSqrt(vec4(dot(g001, g001), dot(g011, g011), dot(g101, g101), dot(g111, g111)));\n                g001 *= norm1.x;\n                g011 *= norm1.y;\n                g101 *= norm1.z;\n                g111 *= norm1.w;\n\n                float n000 = dot(g000, Pf0);\n                float n100 = dot(g100, vec3(Pf1.x, Pf0.yz));\n                float n010 = dot(g010, vec3(Pf0.x, Pf1.y, Pf0.z));\n                float n110 = dot(g110, vec3(Pf1.xy, Pf0.z));\n                float n001 = dot(g001, vec3(Pf0.xy, Pf1.z));\n                float n101 = dot(g101, vec3(Pf1.x, Pf0.y, Pf1.z));\n                float n011 = dot(g011, vec3(Pf0.x, Pf1.yz));\n                float n111 = dot(g111, Pf1);\n\n                vec3 fade_xyz = fade(Pf0);\n                vec4 n_z = mix(vec4(n000, n100, n010, n110), vec4(n001, n101, n011, n111), fade_xyz.z);\n                vec2 n_yz = mix(n_z.xy, n_z.zw, fade_xyz.y);\n                float n_xyz = mix(n_yz.x, n_yz.y, fade_xyz.x);\n                return 2.2 * n_xyz;\n            }\n\n            void main() {\n                float displacement = u_amplitude * cnoise( u_frequency * aVertexPosition + u_time );\n\n                vec3 newPosition = aVertexPosition + aVertexNormal * displacement;\n                gl_Position = vec4(newPosition, 1.0);\n            }\n        ";
+        this.source = "\n            precision highp float;\n\n            attribute highp vec3 aVertexNormal;\n            attribute highp vec3 aVertexPosition;\n\n            uniform highp mat4 uNormalMatrix;\n\t\t\tuniform highp mat4 uMVMatrix;\n\t\t\tuniform highp mat4 uPMatrix;\n\n            varying highp vec3 vLighting;\n\n            uniform float\tu_amplitude;\n            uniform float \tu_frequency;\n            uniform float   u_time;\n\n            vec3 mod289(vec3 x)\n            {\n                return x - floor(x * (1.0 / 289.0)) * 289.0;\n            }\n\n            vec4 mod289(vec4 x)\n            {\n                return x - floor(x * (1.0 / 289.0)) * 289.0;\n            }\n\n            vec4 permute(vec4 x)\n            {\n                return mod289(((x*34.0)+1.0)*x);\n            }\n\n            vec4 taylorInvSqrt(vec4 r)\n            {\n                return 1.79284291400159 - 0.85373472095314 * r;\n            }\n\n            vec3 fade(vec3 t) {\n                return t*t*t*(t*(t*6.0-15.0)+10.0);\n            }\n\n            // Classic Perlin noise\n            float cnoise(vec3 P)\n            {\n                vec3 Pi0 = floor(P); // Integer part for indexing\n                vec3 Pi1 = Pi0 + vec3(1.0); // Integer part + 1\n                Pi0 = mod289(Pi0);\n                Pi1 = mod289(Pi1);\n                vec3 Pf0 = fract(P); // Fractional part for interpolation\n                vec3 Pf1 = Pf0 - vec3(1.0); // Fractional part - 1.0\n                vec4 ix = vec4(Pi0.x, Pi1.x, Pi0.x, Pi1.x);\n                vec4 iy = vec4(Pi0.yy, Pi1.yy);\n                vec4 iz0 = Pi0.zzzz;\n                vec4 iz1 = Pi1.zzzz;\n\n                vec4 ixy = permute(permute(ix) + iy);\n                vec4 ixy0 = permute(ixy + iz0);\n                vec4 ixy1 = permute(ixy + iz1);\n\n                vec4 gx0 = ixy0 * (1.0 / 7.0);\n                vec4 gy0 = fract(floor(gx0) * (1.0 / 7.0)) - 0.5;\n                gx0 = fract(gx0);\n                vec4 gz0 = vec4(0.5) - abs(gx0) - abs(gy0);\n                vec4 sz0 = step(gz0, vec4(0.0));\n                gx0 -= sz0 * (step(0.0, gx0) - 0.5);\n                gy0 -= sz0 * (step(0.0, gy0) - 0.5);\n\n                vec4 gx1 = ixy1 * (1.0 / 7.0);\n                vec4 gy1 = fract(floor(gx1) * (1.0 / 7.0)) - 0.5;\n                gx1 = fract(gx1);\n                vec4 gz1 = vec4(0.5) - abs(gx1) - abs(gy1);\n                vec4 sz1 = step(gz1, vec4(0.0));\n                gx1 -= sz1 * (step(0.0, gx1) - 0.5);\n                gy1 -= sz1 * (step(0.0, gy1) - 0.5);\n\n                vec3 g000 = vec3(gx0.x,gy0.x,gz0.x);\n                vec3 g100 = vec3(gx0.y,gy0.y,gz0.y);\n                vec3 g010 = vec3(gx0.z,gy0.z,gz0.z);\n                vec3 g110 = vec3(gx0.w,gy0.w,gz0.w);\n                vec3 g001 = vec3(gx1.x,gy1.x,gz1.x);\n                vec3 g101 = vec3(gx1.y,gy1.y,gz1.y);\n                vec3 g011 = vec3(gx1.z,gy1.z,gz1.z);\n                vec3 g111 = vec3(gx1.w,gy1.w,gz1.w);\n\n                vec4 norm0 = taylorInvSqrt(vec4(dot(g000, g000), dot(g010, g010), dot(g100, g100), dot(g110, g110)));\n                g000 *= norm0.x;\n                g010 *= norm0.y;\n                g100 *= norm0.z;\n                g110 *= norm0.w;\n                vec4 norm1 = taylorInvSqrt(vec4(dot(g001, g001), dot(g011, g011), dot(g101, g101), dot(g111, g111)));\n                g001 *= norm1.x;\n                g011 *= norm1.y;\n                g101 *= norm1.z;\n                g111 *= norm1.w;\n\n                float n000 = dot(g000, Pf0);\n                float n100 = dot(g100, vec3(Pf1.x, Pf0.yz));\n                float n010 = dot(g010, vec3(Pf0.x, Pf1.y, Pf0.z));\n                float n110 = dot(g110, vec3(Pf1.xy, Pf0.z));\n                float n001 = dot(g001, vec3(Pf0.xy, Pf1.z));\n                float n101 = dot(g101, vec3(Pf1.x, Pf0.y, Pf1.z));\n                float n011 = dot(g011, vec3(Pf0.x, Pf1.yz));\n                float n111 = dot(g111, Pf1);\n\n                vec3 fade_xyz = fade(Pf0);\n                vec4 n_z = mix(vec4(n000, n100, n010, n110), vec4(n001, n101, n011, n111), fade_xyz.z);\n                vec2 n_yz = mix(n_z.xy, n_z.zw, fade_xyz.y);\n                float n_xyz = mix(n_yz.x, n_yz.y, fade_xyz.x);\n                return 2.2 * n_xyz;\n            }\n\n            void main() {\n\n                float displacement = u_amplitude * cnoise( u_frequency * aVertexPosition + u_time );\n\n                vec3 newPosition = aVertexPosition + aVertexNormal * displacement;\n                gl_Position = uPMatrix * uMVMatrix * vec4(newPosition, 1.0);\n\n                highp vec3 ambientLight = vec3(1.0, 1.0, 1.0);\n                highp vec3 directionalLightColor = vec3(1.0, 0.0, 0.0);\n                highp vec3 directionalVector = vec3(0.85, 0.8, 1.40);\n\n                highp vec4 transformedNormal = uNormalMatrix * vec4(aVertexNormal, 1.0);\n\n                highp float directional = max(dot(transformedNormal.xyz, directionalVector), 0.0);\n                vLighting = ambientLight + (directionalLightColor * directional);\n            }\n        ";
         //                gl_Position = projectionMatrix * modelViewMatrix * vec4( newPosition, 1.0 );
     }
 
@@ -665,7 +890,7 @@ var Water = (function () {
         setParams: {
             value: function setParams(params) {
                 var shaderParams = {};
-                shaderParams.amplitude = 10;
+                shaderParams.amplitude = 1;
                 shaderParams.frequency = 0.05;
                 shaderParams.time = 0;
                 shaderParams.DELTA_TIME = 0;
@@ -693,7 +918,7 @@ var Water = (function () {
                 var shaderParams = this.shaderParams;
                 shaderParams.DELTA_TIME = Date.now() - shaderParams.LAST_TIME;
                 shaderParams.LAST_TIME = Date.now();
-                shaderParams.time += shaderParams.DELTA_TIME / 10000;
+                shaderParams.time += shaderParams.DELTA_TIME / 1000;
             }
         }
     });
@@ -715,7 +940,7 @@ var _classCallCheck = function (instance, Constructor) { if (!(instance instance
 var Default = function Default() {
 	_classCallCheck(this, Default);
 
-	this.type = "fragment", this.source = "\n\t\t\tvoid main(void){\n\t\t\t\tgl_FragColor = vec4(0.0, 0.0, 0.8, 1.0);\n\t\t\t}\n\t\t";
+	this.type = "fragment", this.source = "\n            precision mediump float;\n\n            varying highp vec3 vLighting;\n\n\t\t\tvoid main(void){\n\t\t\t\tgl_FragColor = vec4(vec3(0.0, 0.0, 0.3) * vLighting, 1.0);\n\t\t\t}\n\t\t";
 };
 
 module.exports = Default;

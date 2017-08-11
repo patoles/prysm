@@ -7,6 +7,12 @@ export default class Water{
             attribute highp vec3 aVertexNormal;
             attribute highp vec3 aVertexPosition;
 
+            uniform highp mat4 uNormalMatrix;
+			uniform highp mat4 uMVMatrix;
+			uniform highp mat4 uPMatrix;
+
+            varying highp vec3 vLighting;
+
             uniform float	u_amplitude;
             uniform float 	u_frequency;
             uniform float   u_time;
@@ -106,17 +112,27 @@ export default class Water{
             }
 
             void main() {
+
                 float displacement = u_amplitude * cnoise( u_frequency * aVertexPosition + u_time );
 
                 vec3 newPosition = aVertexPosition + aVertexNormal * displacement;
-                gl_Position = vec4(newPosition, 1.0);
+                gl_Position = uPMatrix * uMVMatrix * vec4(newPosition, 1.0);
+
+                highp vec3 ambientLight = vec3(1.0, 1.0, 1.0);
+                highp vec3 directionalLightColor = vec3(1.0, 0.0, 0.0);
+                highp vec3 directionalVector = vec3(0.85, 0.8, 1.40);
+
+                highp vec4 transformedNormal = uNormalMatrix * vec4(aVertexNormal, 1.0);
+
+                highp float directional = max(dot(transformedNormal.xyz, directionalVector), 0.0);
+                vLighting = ambientLight + (directionalLightColor * directional);
             }
         `;
     //                gl_Position = projectionMatrix * modelViewMatrix * vec4( newPosition, 1.0 );
     }
 	setParams(params){
 		var shaderParams = {};
-		shaderParams.amplitude = 10;
+		shaderParams.amplitude = 1;
         shaderParams.frequency = 0.05;
         shaderParams.time = 0.0;
         shaderParams.DELTA_TIME = 0;
@@ -138,6 +154,6 @@ export default class Water{
         var shaderParams = this.shaderParams;
         shaderParams.DELTA_TIME = Date.now() - shaderParams.LAST_TIME;
         shaderParams.LAST_TIME = Date.now();
-        shaderParams.time += shaderParams.DELTA_TIME / 10000;
+        shaderParams.time += shaderParams.DELTA_TIME / 1000;
 	}
 };
