@@ -4,11 +4,20 @@ export default class Default{
         this.source = `
             precision mediump float;
 
+			varying highp vec2 vTextureCoord;
             varying highp vec3 vLighting;
+			uniform sampler2D uSampler;
 
 			void main(void){
-				gl_FragColor = vec4(vec3(0.0, 0.0, 0.3) * vLighting, 1.0);
+				vec4 fragmentColor;
+				fragmentColor = texture2D(uSampler, vTextureCoord);
+
+				if (fragmentColor.a <= 0.1) discard;
+
+				gl_FragColor = vec4(0.0,0.0,0.5,1.0);
 			}
 		`;
+	//			gl_FragColor = vec4(fragmentColor.rgb * vLighting, fragmentColor.a);
+		//				gl_FragColor = vec4(0.0,0.0,0.5,1.0);
 	}
 };

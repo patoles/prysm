@@ -7,6 +7,8 @@ export default class Default{
             attribute highp vec3 aVertexPosition;
 
             uniform highp mat4 uNormalMatrix;
+            uniform highp mat4 uMVMatrix;
+			uniform highp mat4 uPMatrix;
 
             varying highp vec2 vTextureCoord;
             varying highp vec3 vLighting;
@@ -15,7 +17,7 @@ export default class Default{
 
 
             void main(void){
-                gl_Position = vec4(aVertexPosition.xy, 0.0, 1.0);
+                gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition.xy, 0.0, 1.0);
                 vTextureCoord = aVertexPosition.xy*madd+madd;
 
                 highp vec3 ambientLight = vec3(1.0, 1.0, 1.0);
