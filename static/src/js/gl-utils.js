@@ -114,7 +114,10 @@ class GlUtils{
 		ctx.depthFunc(ctx.LEQUAL);
 		ctx.pixelStorei(ctx.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
 		ctx.clear(ctx.COLOR_BUFFER_BIT | ctx.DEPTH_BUFFER_BIT);
+
+		canvas.style.visibility = 'visible';
 		parent.appendChild(canvas);
+		parent.style.visibility = 'hidden';
 		self.frameInfo = frameInfo;
 		self.canvas = canvas;
 		self.ctx = ctx;

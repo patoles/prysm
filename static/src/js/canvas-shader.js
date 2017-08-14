@@ -14,7 +14,7 @@ class CanvasShader extends WebglEngine{
 		this.vertex.setParams && this.vertex.setParams(params);
 		this.initClick(this.canvas);
 		this.initShaders();
-		var plane = this.createPlane(20);
+		var plane = this.createPlane(40);
 //		this.meshes = {"plan":{"vertices":[-1,-1,0,1,-1,0,1,1,0,-1,1,0],"vertexNormals":[0,0,1,0,0,1,0,0,1,0,0,1],"textures":[0,0,0,1,0,0,1,1],"indices":[0,1,2,0,2,3], "translation":[0.0,0.0,-1.0]}};
 		this.meshes = {"plan":{"vertices":plane.vertices,"normals":plane.normals,"textures":[0,0,0,1,0,0,1,1],"indices":plane.indices, "translation":[0.0,0.0,-1.0]}};
 		GlUtils.initMeshBuffers(this.ctx, this.meshes.plan);

@@ -137,8 +137,8 @@ export default class Water{
     }
 	setParams(params){
 		var shaderParams = {};
-		shaderParams.amplitude = 0.5;
-        shaderParams.frequency = 0.8;
+		shaderParams.amplitude = 0.1;
+        shaderParams.frequency = 1.0;
         shaderParams.time = 0.0;
         shaderParams.DELTA_TIME = 0;
         shaderParams.LAST_TIME = Date.now();
@@ -159,6 +159,6 @@ export default class Water{
         var shaderParams = this.shaderParams;
         shaderParams.DELTA_TIME = Date.now() - shaderParams.LAST_TIME;
         shaderParams.LAST_TIME = Date.now();
-        shaderParams.time += shaderParams.DELTA_TIME / 10000;
+        shaderParams.time += shaderParams.DELTA_TIME / 1000;
 	}
 };

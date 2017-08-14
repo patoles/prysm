@@ -174,7 +174,10 @@ var GlUtils = (function () {
 				ctx.depthFunc(ctx.LEQUAL);
 				ctx.pixelStorei(ctx.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
 				ctx.clear(ctx.COLOR_BUFFER_BIT | ctx.DEPTH_BUFFER_BIT);
+
+				canvas.style.visibility = "visible";
 				parent.appendChild(canvas);
+				parent.style.visibility = "hidden";
 				self.frameInfo = frameInfo;
 				self.canvas = canvas;
 				self.ctx = ctx;
@@ -431,7 +434,7 @@ var _interopRequire = function (obj) { return obj && obj.__esModule ? obj["defau
 var Shapeshift = _interopRequire(__webpack_require__(9));
 
 var item = document.getElementsByClassName("wavify")[0];
-var shape = new Shapeshift(item, "default", "default", { speed: 0.02, x: 10.1, y: 0.8, z: 0.1 });
+var shape = new Shapeshift(item, "shockwave", "water", { speed: 0.02, x: 10.1, y: 0.8, z: 0.1 });
 
 /***/ }),
 /* 2 */
@@ -471,7 +474,7 @@ var CanvasShader = (function (_WebglEngine) {
 		this.vertex.setParams && this.vertex.setParams(params);
 		this.initClick(this.canvas);
 		this.initShaders();
-		var plane = this.createPlane(20);
+		var plane = this.createPlane(40);
 		//		this.meshes = {"plan":{"vertices":[-1,-1,0,1,-1,0,1,1,0,-1,1,0],"vertexNormals":[0,0,1,0,0,1,0,0,1,0,0,1],"textures":[0,0,0,1,0,0,1,1],"indices":[0,1,2,0,2,3], "translation":[0.0,0.0,-1.0]}};
 		this.meshes = { plan: { vertices: plane.vertices, normals: plane.normals, textures: [0, 0, 0, 1, 0, 0, 1, 1], indices: plane.indices, translation: [0, 0, -1] } };
 		GlUtils.initMeshBuffers(this.ctx, this.meshes.plan);
@@ -768,8 +771,8 @@ var Water = (function () {
         setParams: {
             value: function setParams(params) {
                 var shaderParams = {};
-                shaderParams.amplitude = 0.5;
-                shaderParams.frequency = 0.8;
+                shaderParams.amplitude = 0.1;
+                shaderParams.frequency = 1;
                 shaderParams.time = 0;
                 shaderParams.DELTA_TIME = 0;
                 shaderParams.LAST_TIME = Date.now();
@@ -796,7 +799,7 @@ var Water = (function () {
                 var shaderParams = this.shaderParams;
                 shaderParams.DELTA_TIME = Date.now() - shaderParams.LAST_TIME;
                 shaderParams.LAST_TIME = Date.now();
-                shaderParams.time += shaderParams.DELTA_TIME / 10000;
+                shaderParams.time += shaderParams.DELTA_TIME / 1000;
             }
         }
     });
