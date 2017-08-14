@@ -2,9 +2,10 @@ export default class Default{
     constructor(){
         this.type = 'vertex';
         this.source = `
-            precision mediump float;
+            precision highp float;
             attribute highp vec3 aVertexNormal;
             attribute highp vec3 aVertexPosition;
+            attribute highp vec2 aTextureCoord;
 
             uniform highp mat4 uNormalMatrix;
             uniform highp mat4 uMVMatrix;
@@ -30,5 +31,9 @@ export default class Default{
                 vLighting = ambientLight + (directionalLightColor * directional);
             }
         `;
+        /*
+                gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition.xy, 0.0, 1.0);
+                vTextureCoord = aVertexPosition.xy*madd+madd;
+        */
     }
 };

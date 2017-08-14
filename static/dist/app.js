@@ -77,56 +77,6 @@ var _createClass = (function () { function defineProperties(target, props) { for
 
 var _classCallCheck = function (instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } };
 
-Matrix.Translation = function (v) {
-	if (v.elements.length == 2) {
-		var r = Matrix.I(3);
-		r.elements[2][0] = v.elements[0];
-		r.elements[2][1] = v.elements[1];
-		return r;
-	}
-	if (v.elements.length == 3) {
-		var r = Matrix.I(4);
-		r.elements[0][3] = v.elements[0];
-		r.elements[1][3] = v.elements[1];
-		r.elements[2][3] = v.elements[2];
-		return r;
-	}
-	throw "Invalid length for Translation";
-};
-
-Matrix.prototype.flatten = function () {
-	var result = [];
-	if (this.elements.length == 0) return [];
-
-	for (var j = 0; j < this.elements[0].length; j++) for (var i = 0; i < this.elements.length; i++) result.push(this.elements[i][j]);
-	return result;
-};
-
-Matrix.prototype.ensure4x4 = function () {
-	if (this.elements.length == 4 && this.elements[0].length == 4) return this;
-
-	if (this.elements.length > 4 || this.elements[0].length > 4) return null;
-	for (var i = 0; i < this.elements.length; i++) {
-		for (var j = this.elements[i].length; j < 4; j++) {
-			if (i == j) this.elements[i].push(1);else this.elements[i].push(0);
-		}
-	}
-	for (var i = this.elements.length; i < 4; i++) {
-		if (i == 0) this.elements.push([1, 0, 0, 0]);else if (i == 1) this.elements.push([0, 1, 0, 0]);else if (i == 2) this.elements.push([0, 0, 1, 0]);else if (i == 3) this.elements.push([0, 0, 0, 1]);
-	}
-	return this;
-};
-
-Matrix.prototype.make3x3 = function () {
-	if (this.elements.length != 4 || this.elements[0].length != 4) return null;
-
-	return Matrix.create([[this.elements[0][0], this.elements[0][1], this.elements[0][2]], [this.elements[1][0], this.elements[1][1], this.elements[1][2]], [this.elements[2][0], this.elements[2][1], this.elements[2][2]]]);
-};
-
-Vector.prototype.flatten = function () {
-	return this.elements;
-};
-
 var GlUtils = (function () {
 	function GlUtils() {
 		_classCallCheck(this, GlUtils);
@@ -174,7 +124,6 @@ var GlUtils = (function () {
 				ctx.depthFunc(ctx.LEQUAL);
 				ctx.pixelStorei(ctx.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
 				ctx.clear(ctx.COLOR_BUFFER_BIT | ctx.DEPTH_BUFFER_BIT);
-
 				canvas.style.visibility = "visible";
 				parent.appendChild(canvas);
 				parent.style.visibility = "hidden";
@@ -235,6 +184,10 @@ var GlUtils = (function () {
 				ctx.enableVertexAttribArray(shaderProgram.vertexPositionAttribute);
 				shaderProgram.vertexNormalAttribute = ctx.getAttribLocation(shaderProgram, "aVertexNormal");
 				ctx.enableVertexAttribArray(shaderProgram.vertexNormalAttribute);
+				/*
+    		shaderProgram.textureCoordAttribute = ctx.getAttribLocation(shaderProgram, "aTextureCoord");
+    		ctx.enableVertexAttribArray(shaderProgram.textureCoordAttribute);
+    */
 				shaderProgram.samplerUniform = ctx.getUniformLocation(shaderProgram, "uSampler");
 				shaderProgram.screenRatio = ctx.getUniformLocation(shaderProgram, "screenRatio");
 				self.shaderProgram = shaderProgram;
@@ -247,41 +200,6 @@ var GlUtils = (function () {
 				} catch (e) {
 					return false;
 				}
-			}
-		},
-		mht: {
-			value: function mht(m) {
-				var s = "";
-				if (m.length == 16) {
-					for (var i = 0; i < 4; i++) {
-						s += "<span style='font-family: monospace'>[" + m[i * 4 + 0].toFixed(4) + "," + m[i * 4 + 1].toFixed(4) + "," + m[i * 4 + 2].toFixed(4) + "," + m[i * 4 + 3].toFixed(4) + "]</span><br>";
-					}
-				} else if (m.length == 9) {
-					for (var i = 0; i < 3; i++) {
-						s += "<span style='font-family: monospace'>[" + m[i * 3 + 0].toFixed(4) + "," + m[i * 3 + 1].toFixed(4) + "," + m[i * 3 + 2].toFixed(4) + "]</font><br>";
-					}
-				} else {
-					return m.toString();
-				}
-				return s;
-			}
-		},
-		makeLookAt: {
-			value: function makeLookAt(ex, ey, ez, cx, cy, cz, ux, uy, uz) {
-				var eye = $V([ex, ey, ez]);
-				var center = $V([cx, cy, cz]);
-				var up = $V([ux, uy, uz]);
-
-				var mag;
-
-				var z = eye.subtract(center).toUnitVector();
-				var x = up.cross(z).toUnitVector();
-				var y = z.cross(x).toUnitVector();
-
-				var m = $M([[x.e(1), x.e(2), x.e(3), 0], [y.e(1), y.e(2), y.e(3), 0], [z.e(1), z.e(2), z.e(3), 0], [0, 0, 0, 1]]);
-
-				var t = $M([[1, 0, 0, -ex], [0, 1, 0, -ey], [0, 0, 1, -ez], [0, 0, 0, 1]]);
-				return m.x(t);
 			}
 		},
 		makePerspective: {
@@ -306,15 +224,6 @@ var GlUtils = (function () {
 				return $M([[X, 0, A, 0], [0, Y, B, 0], [0, 0, C, D], [0, 0, -1, 0]]);
 			}
 		},
-		makeOrtho: {
-			value: function makeOrtho(left, right, bottom, top, znear, zfar) {
-				var tx = -(right + left) / (right - left);
-				var ty = -(top + bottom) / (top - bottom);
-				var tz = -(zfar + znear) / (zfar - znear);
-
-				return $M([[2 / (right - left), 0, 0, tx], [0, 2 / (top - bottom), 0, ty], [0, 0, -2 / (zfar - znear), tz], [0, 0, 0, 1]]);
-			}
-		},
 		loadIdentity: {
 			value: function loadIdentity() {
 				this.mvMatrix = Matrix.I(4);
@@ -323,34 +232,6 @@ var GlUtils = (function () {
 		multMatrix: {
 			value: function multMatrix(m) {
 				this.mvMatrix = this.mvMatrix.x(m);
-			}
-		},
-		scale: {
-			value: function scale(v) {
-				var result = this.mvMatrix;
-				console.log(result);
-				var m = result.m;
-
-				result[0][0] = v[0];
-				result[0][1] = 0;
-				result[0][2] = 0;
-				result[0][3] = 0;
-
-				result[1][0] = 0;
-				result[1][1] = v[1];
-				result[1][2] = 0;
-				result[1][3] = 0;
-
-				result[2][0] = 0;
-				result[2][1] = 0;
-				result[2][2] = v[2];
-				result[2][3] = 0;
-
-				result[3][0] = 0;
-				result[3][1] = 0;
-				result[3][2] = 0;
-				result[3][3] = v[3];
-				this.mvMatrix = result;
 			}
 		},
 		mvTranslate: {
@@ -418,6 +299,52 @@ var GlUtils = (function () {
 	return GlUtils;
 })();
 
+Matrix.Translation = function (v) {
+	if (v.elements.length == 2) {
+		var r = Matrix.I(3);
+		r.elements[2][0] = v.elements[0];
+		r.elements[2][1] = v.elements[1];
+		return r;
+	}
+	if (v.elements.length == 3) {
+		var r = Matrix.I(4);
+		r.elements[0][3] = v.elements[0];
+		r.elements[1][3] = v.elements[1];
+		r.elements[2][3] = v.elements[2];
+		return r;
+	}
+	throw "Invalid length for Translation";
+};
+
+Matrix.prototype.flatten = function () {
+	var result = [];
+	if (this.elements.length == 0) return [];
+
+	for (var j = 0; j < this.elements[0].length; j++) for (var i = 0; i < this.elements.length; i++) result.push(this.elements[i][j]);
+	return result;
+};
+
+Matrix.prototype.ensure4x4 = function () {
+	if (this.elements.length == 4 && this.elements[0].length == 4) return this;
+
+	if (this.elements.length > 4 || this.elements[0].length > 4) return null;
+	for (var i = 0; i < this.elements.length; i++) {
+		for (var j = this.elements[i].length; j < 4; j++) {
+			if (i == j) this.elements[i].push(1);else this.elements[i].push(0);
+		}
+	}
+	for (var i = this.elements.length; i < 4; i++) {
+		if (i == 0) this.elements.push([1, 0, 0, 0]);else if (i == 1) this.elements.push([0, 1, 0, 0]);else if (i == 2) this.elements.push([0, 0, 1, 0]);else if (i == 3) this.elements.push([0, 0, 0, 1]);
+	}
+	return this;
+};
+
+Matrix.prototype.make3x3 = function () {
+	if (this.elements.length != 4 || this.elements[0].length != 4) return null;
+
+	return Matrix.create([[this.elements[0][0], this.elements[0][1], this.elements[0][2]], [this.elements[1][0], this.elements[1][1], this.elements[1][2]], [this.elements[2][0], this.elements[2][1], this.elements[2][2]]]);
+};
+
 var _GlUtils = new GlUtils();
 
 module.exports = _GlUtils;
@@ -434,7 +361,14 @@ var _interopRequire = function (obj) { return obj && obj.__esModule ? obj["defau
 var Shapeshift = _interopRequire(__webpack_require__(9));
 
 var item = document.getElementsByClassName("wavify")[0];
-var shape = new Shapeshift(item, "shockwave", "water", { speed: 0.02, x: 10.1, y: 0.8, z: 0.1 });
+var shape = new Shapeshift(item, {
+    fragment: "default",
+    vertex: "default",
+    params: {
+        fragment: { speed: 0.02, x: 10.1, y: 0.8, z: 0.1 },
+        vertex: { amplitude: 0.05, frequency: 1 }
+    }
+});
 
 /***/ }),
 /* 2 */
@@ -470,51 +404,21 @@ var CanvasShader = (function (_WebglEngine) {
 		vertex = vertex.charAt(0).toUpperCase() + vertex.slice(1);
 		this.fragment = new fgShader[fragment](this.canvasInfo);
 		this.vertex = new vcShader[vertex](this.canvasInfo);
-		this.fragment.setParams && this.fragment.setParams(params);
-		this.vertex.setParams && this.vertex.setParams(params);
+		this.fragment.setParams && this.fragment.setParams(params.fragment);
+		this.vertex.setParams && this.vertex.setParams(params.vertex);
 		this.initClick(this.canvas);
 		this.initShaders();
-		var plane = this.createPlane(40);
-		//		this.meshes = {"plan":{"vertices":[-1,-1,0,1,-1,0,1,1,0,-1,1,0],"vertexNormals":[0,0,1,0,0,1,0,0,1,0,0,1],"textures":[0,0,0,1,0,0,1,1],"indices":[0,1,2,0,2,3], "translation":[0.0,0.0,-1.0]}};
-		this.meshes = { plan: { vertices: plane.vertices, normals: plane.normals, textures: [0, 0, 0, 1, 0, 0, 1, 1], indices: plane.indices, translation: [0, 0, -1] } };
-		GlUtils.initMeshBuffers(this.ctx, this.meshes.plan);
-		this.initTexture(this.meshes.plan, texture);
+		var plane = this.createPlane(20);
+		plane.translation = [0, 0, -1];
+		//		plane.rotation = [0,80,0];
+		this.meshes = { plane: plane };
+		GlUtils.initMeshBuffers(this.ctx, this.meshes.plane);
+		this.initTexture(this.meshes.plane, texture);
 	}
 
 	_inherits(CanvasShader, _WebglEngine);
 
 	_createClass(CanvasShader, {
-		createPlane: {
-			value: function createPlane(quads) {
-				var plan = {
-					vertices: [],
-					normals: [],
-					indices: [] };
-
-				for (var y = 0; y <= quads; ++y) {
-					var v = -1 + y * (2 / quads);
-					for (var x = 0; x <= quads; ++x) {
-						var u = -1 + x * (2 / quads);
-						plan.vertices = plan.vertices.concat([u, v, 0]);
-						plan.normals = plan.normals.concat([0, 0, 1]);
-					}
-				}
-
-				var rowSize = quads + 1;
-				for (var y = 0; y < quads; ++y) {
-					var rowOffset0 = (y + 0) * rowSize;
-					var rowOffset1 = (y + 1) * rowSize;
-					for (var x = 0; x < quads; ++x) {
-						var offset0 = rowOffset0 + x;
-						var offset1 = rowOffset1 + x;
-						plan.indices = plan.indices.concat(offset0, offset0 + 1, offset1);
-						plan.indices = plan.indices.concat(offset1, offset0 + 1, offset1 + 1);
-					}
-				}
-				console.log(plan);
-				return plan;
-			}
-		},
 		initShaders: {
 			value: function initShaders() {
 				GlUtils.initShaders(this, this.ctx, this.fragment, this.vertex);
@@ -526,7 +430,7 @@ var CanvasShader = (function (_WebglEngine) {
 			value: function draw() {
 				var _this = this;
 
-				this.drawObject(this.meshes.plan, function () {
+				this.drawObject(this.meshes.plane, function () {
 					_this.fragment.draw && _this.fragment.draw(_this.ctx, _this.shaderProgram);
 					_this.vertex.draw && _this.vertex.draw(_this.ctx, _this.shaderProgram);
 				});
@@ -605,12 +509,13 @@ var Shockwave = (function () {
 	_createClass(Shockwave, {
 		setParams: {
 			value: function setParams(params) {
+				params = params || {};
 				var shaderParams = {};
 				shaderParams.WAVE_LIST_SIZE = 10;
 				shaderParams.WAVE_LIFESPAN = 1.5;
 				shaderParams.lastTouchTime = -1;
 				var speed = params && params.speed || 0.02;
-				var shockParams = params ? [params.x || 10.1, params.y || 0.8, params.z || 0.1] : [10.1, 0.8, 0.1];
+				var shockParams = [params.x || 10.1, params.y || 0.8, params.z || 0.1];
 				shaderParams.waveParams = { shockParams: shockParams, speed: speed };
 				shaderParams.waveList = [];
 				for (var x = 0; x < shaderParams.WAVE_LIST_SIZE; x++) shaderParams.waveList.push({ time: 0, center: [0, 0], on: false, shockParams: shaderParams.waveParams.shockParams, speed: shaderParams.waveParams.speed });
@@ -742,7 +647,11 @@ var Default = function Default() {
     _classCallCheck(this, Default);
 
     this.type = "vertex";
-    this.source = "\n            precision mediump float;\n            attribute highp vec3 aVertexNormal;\n            attribute highp vec3 aVertexPosition;\n\n            uniform highp mat4 uNormalMatrix;\n            uniform highp mat4 uMVMatrix;\n\t\t\tuniform highp mat4 uPMatrix;\n\n            varying highp vec2 vTextureCoord;\n            varying highp vec3 vLighting;\n\n            const vec2 madd=vec2(0.5, 0.5);\n\n\n            void main(void){\n                gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition.xy, 0.0, 1.0);\n                vTextureCoord = aVertexPosition.xy*madd+madd;\n\n                highp vec3 ambientLight = vec3(1.0, 1.0, 1.0);\n                highp vec3 directionalLightColor = vec3(1.0, 0.0, 0.0);\n                highp vec3 directionalVector = vec3(0.85, 0.8, -0.40);\n\n                highp vec4 transformedNormal = uNormalMatrix * vec4(aVertexNormal, 1.0);\n\n                highp float directional = max(dot(transformedNormal.xyz, directionalVector), 0.0);\n                vLighting = ambientLight + (directionalLightColor * directional);\n            }\n        ";
+    this.source = "\n            precision highp float;\n            attribute highp vec3 aVertexNormal;\n            attribute highp vec3 aVertexPosition;\n            attribute highp vec2 aTextureCoord;\n\n            uniform highp mat4 uNormalMatrix;\n            uniform highp mat4 uMVMatrix;\n\t\t\tuniform highp mat4 uPMatrix;\n\n            varying highp vec2 vTextureCoord;\n            varying highp vec3 vLighting;\n\n            const vec2 madd=vec2(0.5, 0.5);\n\n\n            void main(void){\n                gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition.xy, 0.0, 1.0);\n                vTextureCoord = aVertexPosition.xy*madd+madd;\n\n                highp vec3 ambientLight = vec3(1.0, 1.0, 1.0);\n                highp vec3 directionalLightColor = vec3(1.0, 0.0, 0.0);\n                highp vec3 directionalVector = vec3(0.85, 0.8, -0.40);\n\n                highp vec4 transformedNormal = uNormalMatrix * vec4(aVertexNormal, 1.0);\n\n                highp float directional = max(dot(transformedNormal.xyz, directionalVector), 0.0);\n                vLighting = ambientLight + (directionalLightColor * directional);\n            }\n        ";
+    /*
+            gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition.xy, 0.0, 1.0);
+            vTextureCoord = aVertexPosition.xy*madd+madd;
+    */
 };
 
 module.exports = Default;
@@ -770,9 +679,10 @@ var Water = (function () {
     _createClass(Water, {
         setParams: {
             value: function setParams(params) {
+                params = params || {};
                 var shaderParams = {};
-                shaderParams.amplitude = 0.1;
-                shaderParams.frequency = 1;
+                shaderParams.amplitude = params.amplitude || 0.05;
+                shaderParams.frequency = params.frequency || 1;
                 shaderParams.time = 0;
                 shaderParams.DELTA_TIME = 0;
                 shaderParams.LAST_TIME = Date.now();
@@ -826,11 +736,12 @@ var html2canvas = _interopRequire(__webpack_require__(11));
 
 var CanvasShader = _interopRequire(__webpack_require__(2));
 
-var Shapeshift = function Shapeshift(target, fragmentShader, vertexShader, params) {
+var Shapeshift = function Shapeshift(target, options) {
 	var _this = this;
 
 	_classCallCheck(this, Shapeshift);
 
+	options = options || {};
 	this.fragment = null;
 	this.vertex = null;
 	this.canvasInfo = null;
@@ -841,7 +752,7 @@ var Shapeshift = function Shapeshift(target, fragmentShader, vertexShader, param
 			useCORS: true,
 			onrendered: function (canvas) {
 				item.style.border = "none";
-				var shader = new CanvasShader(item, canvas.toDataURL("png"), fragmentShader || "shockwave", vertexShader || "default", params);
+				var shader = new CanvasShader(item, canvas.toDataURL("png"), options.fragment || "default", options.vertex || "default", options.params);
 				_this.fragment = shader.fragment;
 				_this.vertex = shader.vertex;
 				_this.canvasInfo = shader.canvasInfo;
@@ -909,18 +820,21 @@ var WebglEngine = (function () {
 			value: function drawObject(mesh, drawShaders) {
 				var ctx = this.ctx;
 				ctx.clear(ctx.COLOR_BUFFER_BIT | ctx.DEPTH_BUFFER_BIT);
-				var perspectiveMatrix = GlUtils.makePerspective(90.6, this.realWidth / this.realHeight, 0.1, 100);
+				var perspectiveMatrix = GlUtils.makePerspective(89.95, this.realWidth / this.realHeight, 0.1, 100);
 				GlUtils.loadIdentity();
 				GlUtils.mvPushMatrix();
 				mesh.translation && GlUtils.mvTranslate(mesh.translation);
 				mesh.scale && GlUtils.mvScale([mesh.scale[0], mesh.scale[1], mesh.scale[2]]);
 				mesh.rotation && GlUtils.mvRotateMultiple(mesh.rotation[0], [1, 0, 0], mesh.rotation[1], [0, 1, 0]);
-
 				ctx.useProgram(this.shaderProgram);
 				ctx.bindBuffer(ctx.ARRAY_BUFFER, mesh.vertexBuffer);
 				ctx.vertexAttribPointer(this.shaderProgram.vertexPositionAttribute, mesh.vertexBuffer.itemSize, ctx.FLOAT, false, 0, 0);
 				ctx.bindBuffer(ctx.ARRAY_BUFFER, mesh.normalBuffer);
 				ctx.vertexAttribPointer(this.shaderProgram.vertexNormalAttribute, mesh.normalBuffer.itemSize, ctx.FLOAT, false, 0, 0);
+				/*
+    		ctx.bindBuffer(ctx.ARRAY_BUFFER, mesh.textureBuffer);
+    		ctx.vertexAttribPointer(this.shaderProgram.textureCoordAttribute, mesh.textureBuffer.itemSize, ctx.FLOAT, false, 0, 0);
+    */
 				ctx.activeTexture(ctx.TEXTURE0);
 				ctx.bindTexture(ctx.TEXTURE_2D, mesh.texture);
 				ctx.uniform1i(this.shaderProgram.samplerUniform, 0);
@@ -962,6 +876,33 @@ var WebglEngine = (function () {
 				if (object.texture.image.complete || object.texture.image.width + object.texture.image.height > 0) action();else object.texture.image.addEventListener("load", function (event) {
 					action();
 				});
+			}
+		},
+		createPlane: {
+			value: function createPlane(quads) {
+				var plan = {
+					vertices: [], normals: [], indices: [], textures: [0, 0, 0, 1, 0, 0, 1, 1]
+				};
+				for (var y = 0; y <= quads; ++y) {
+					var v = -1 + y * (2 / quads);
+					for (var x = 0; x <= quads; ++x) {
+						var u = -1 + x * (2 / quads);
+						plan.vertices = plan.vertices.concat([u, v, 0]);
+						plan.normals = plan.normals.concat([0, 0, 1]);
+					}
+				}
+				var rowSize = quads + 1;
+				for (var y = 0; y < quads; ++y) {
+					var rowOffset0 = (y + 0) * rowSize;
+					var rowOffset1 = (y + 1) * rowSize;
+					for (var x = 0; x < quads; ++x) {
+						var offset0 = rowOffset0 + x;
+						var offset1 = rowOffset1 + x;
+						plan.indices = plan.indices.concat(offset0, offset0 + 1, offset1);
+						plan.indices = plan.indices.concat(offset1, offset0 + 1, offset1 + 1);
+					}
+				}
+				return plan;
 			}
 		}
 	});

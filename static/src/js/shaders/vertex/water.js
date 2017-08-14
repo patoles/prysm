@@ -136,9 +136,10 @@ export default class Water{
     //                gl_Position = projectionMatrix * modelViewMatrix * vec4( newPosition, 1.0 );
     }
 	setParams(params){
+        params = params || {};
 		var shaderParams = {};
-		shaderParams.amplitude = 0.1;
-        shaderParams.frequency = 1.0;
+		shaderParams.amplitude = params.amplitude || 0.05;
+        shaderParams.frequency = params.frequency || 1.0;
         shaderParams.time = 0.0;
         shaderParams.DELTA_TIME = 0;
         shaderParams.LAST_TIME = Date.now();

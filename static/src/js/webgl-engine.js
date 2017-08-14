@@ -28,18 +28,21 @@ class WebglEngine{
 	drawObject(mesh, drawShaders){
 		var ctx = this.ctx;
 		ctx.clear(ctx.COLOR_BUFFER_BIT | ctx.DEPTH_BUFFER_BIT);
-		var perspectiveMatrix = GlUtils.makePerspective(90.6, this.realWidth/this.realHeight, 0.1, 100.0);
+		var perspectiveMatrix = GlUtils.makePerspective(89.95, this.realWidth/this.realHeight, 0.1, 100.0);
 		GlUtils.loadIdentity();
 		GlUtils.mvPushMatrix();
 		mesh.translation && GlUtils.mvTranslate(mesh.translation);
 		mesh.scale && GlUtils.mvScale([mesh.scale[0],mesh.scale[1],mesh.scale[2]]);
 		mesh.rotation && GlUtils.mvRotateMultiple(mesh.rotation[0], [1,0,0], mesh.rotation[1], [0,1,0]);
-
 		ctx.useProgram(this.shaderProgram);
 		ctx.bindBuffer(ctx.ARRAY_BUFFER, mesh.vertexBuffer);
 		ctx.vertexAttribPointer(this.shaderProgram.vertexPositionAttribute, mesh.vertexBuffer.itemSize, ctx.FLOAT, false, 0, 0);
 		ctx.bindBuffer(ctx.ARRAY_BUFFER, mesh.normalBuffer);
 		ctx.vertexAttribPointer(this.shaderProgram.vertexNormalAttribute, mesh.normalBuffer.itemSize, ctx.FLOAT, false, 0, 0);
+/*
+		ctx.bindBuffer(ctx.ARRAY_BUFFER, mesh.textureBuffer);
+		ctx.vertexAttribPointer(this.shaderProgram.textureCoordAttribute, mesh.textureBuffer.itemSize, ctx.FLOAT, false, 0, 0);
+*/
 		ctx.activeTexture(ctx.TEXTURE0);
 		ctx.bindTexture(ctx.TEXTURE_2D, mesh.texture);
 		ctx.uniform1i(this.shaderProgram.samplerUniform, 0);
@@ -50,7 +53,7 @@ class WebglEngine{
 		ctx.drawElements(ctx.TRIANGLES, mesh.indexBuffer.numItems, ctx.UNSIGNED_SHORT, 0);
 //		ctx.drawElements(ctx.LINE_STRIP, mesh.indexBuffer.numItems, ctx.UNSIGNED_SHORT, 0);
 		GlUtils.mvPopMatrix();
-}
+	}
 	handleLoadedTexture(texture){
 		var ctx = this.ctx;
 		ctx.pixelStorei(ctx.UNPACK_FLIP_Y_WEBGL, true);
@@ -76,6 +79,31 @@ class WebglEngine{
 			action();
 		else
 			object.texture.image.addEventListener('load', (event) => {action();});
+	}
+	createPlane(quads){		
+		var plan = {
+			vertices: [], normals: [], indices: [], textures:[0,0,0,1,0,0,1,1]
+		};
+		for (var y = 0; y <= quads; ++y) {
+			var v = -1 + (y * (2 / quads));
+			for (var x = 0; x <= quads; ++x) {
+				var u = -1 + (x * (2 / quads));
+				plan.vertices = plan.vertices.concat([u, v, 0])
+				plan.normals = plan.normals.concat([0, 0, 1])
+			}
+		}
+		var rowSize = (quads + 1);
+		for (var y = 0; y < quads; ++y) {
+			var rowOffset0 = (y + 0) * rowSize;
+			var rowOffset1 = (y + 1) * rowSize;
+			for (var x = 0; x < quads; ++x) {
+				var offset0 = rowOffset0 + x;
+				var offset1 = rowOffset1 + x;
+				plan.indices = plan.indices.concat(offset0, offset0 + 1, offset1);
+				plan.indices = plan.indices.concat(offset1, offset0 + 1, offset1 + 1);
+			}
+		}
+		return plan;
 	}
 }
 

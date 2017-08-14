@@ -10,45 +10,16 @@ class CanvasShader extends WebglEngine{
 		vertex = vertex.charAt(0).toUpperCase() + vertex.slice(1);
 		this.fragment = new fgShader[fragment](this.canvasInfo);
 		this.vertex = new vcShader[vertex](this.canvasInfo);
-		this.fragment.setParams && this.fragment.setParams(params);
-		this.vertex.setParams && this.vertex.setParams(params);
+		this.fragment.setParams && this.fragment.setParams(params.fragment);
+		this.vertex.setParams && this.vertex.setParams(params.vertex);
 		this.initClick(this.canvas);
 		this.initShaders();
-		var plane = this.createPlane(40);
-//		this.meshes = {"plan":{"vertices":[-1,-1,0,1,-1,0,1,1,0,-1,1,0],"vertexNormals":[0,0,1,0,0,1,0,0,1,0,0,1],"textures":[0,0,0,1,0,0,1,1],"indices":[0,1,2,0,2,3], "translation":[0.0,0.0,-1.0]}};
-		this.meshes = {"plan":{"vertices":plane.vertices,"normals":plane.normals,"textures":[0,0,0,1,0,0,1,1],"indices":plane.indices, "translation":[0.0,0.0,-1.0]}};
-		GlUtils.initMeshBuffers(this.ctx, this.meshes.plan);
-		this.initTexture(this.meshes.plan, texture);
-	}
-	createPlane(quads){		
-		var plan = {
-			vertices: [],
-			normals: [],
-			indices: [],
-		};
-
-		for (var y = 0; y <= quads; ++y) {
-			var v = -1 + (y * (2 / quads));
-			for (var x = 0; x <= quads; ++x) {
-				var u = -1 + (x * (2 / quads));
-				plan.vertices = plan.vertices.concat([u, v, 0])
-				plan.normals = plan.normals.concat([0, 0, 1])
-			}
-		}
-
-		var rowSize = (quads + 1);
-		for (var y = 0; y < quads; ++y) {
-			var rowOffset0 = (y + 0) * rowSize;
-			var rowOffset1 = (y + 1) * rowSize;
-			for (var x = 0; x < quads; ++x) {
-				var offset0 = rowOffset0 + x;
-				var offset1 = rowOffset1 + x;
-				plan.indices = plan.indices.concat(offset0, offset0 + 1, offset1);
-				plan.indices = plan.indices.concat(offset1, offset0 + 1, offset1 + 1);
-			}
-		}
-		console.log(plan);
-		return plan;
+		var plane = this.createPlane(20);
+		plane.translation = [0,0,-1];
+//		plane.rotation = [0,80,0];
+		this.meshes = {"plane":plane};
+		GlUtils.initMeshBuffers(this.ctx, this.meshes.plane);
+		this.initTexture(this.meshes.plane, texture);
 	}
 	initShaders(){
 		GlUtils.initShaders(this, this.ctx, this.fragment, this.vertex);
@@ -56,7 +27,7 @@ class CanvasShader extends WebglEngine{
 		this.vertex.init && this.vertex.init(this.ctx, this.shaderProgram);
 	}
 	draw(){
-		this.drawObject(this.meshes.plan, () => {
+		this.drawObject(this.meshes.plane, () => {
 			this.fragment.draw && this.fragment.draw(this.ctx, this.shaderProgram);
 			this.vertex.draw && this.vertex.draw(this.ctx, this.shaderProgram);
 		});
