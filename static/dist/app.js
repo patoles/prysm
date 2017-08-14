@@ -187,7 +187,7 @@ var GlUtils = (function () {
 		},
 		initMeshBuffers: {
 			value: function initMeshBuffers(gl, mesh) {
-				mesh.normalBuffer = this.buildBuffer(gl, gl.ARRAY_BUFFER, mesh.vertexNormals, 3);
+				mesh.normalBuffer = this.buildBuffer(gl, gl.ARRAY_BUFFER, mesh.normals, 3);
 				mesh.textureBuffer = this.buildBuffer(gl, gl.ARRAY_BUFFER, mesh.textures, 2);
 				mesh.vertexBuffer = this.buildBuffer(gl, gl.ARRAY_BUFFER, mesh.vertices, 3);
 				mesh.indexBuffer = this.buildBuffer(gl, gl.ELEMENT_ARRAY_BUFFER, mesh.indices, 1);
@@ -431,7 +431,7 @@ var _interopRequire = function (obj) { return obj && obj.__esModule ? obj["defau
 var Shapeshift = _interopRequire(__webpack_require__(9));
 
 var item = document.getElementsByClassName("wavify")[0];
-var shape = new Shapeshift(item, "default", "water", { speed: 0.02, x: 10.1, y: 0.8, z: 0.1 });
+var shape = new Shapeshift(item, "default", "default", { speed: 0.02, x: 10.1, y: 0.8, z: 0.1 });
 
 /***/ }),
 /* 2 */
@@ -473,7 +473,7 @@ var CanvasShader = (function (_WebglEngine) {
 		this.initShaders();
 		var plane = this.createPlane(20);
 		//		this.meshes = {"plan":{"vertices":[-1,-1,0,1,-1,0,1,1,0,-1,1,0],"vertexNormals":[0,0,1,0,0,1,0,0,1,0,0,1],"textures":[0,0,0,1,0,0,1,1],"indices":[0,1,2,0,2,3], "translation":[0.0,0.0,-1.0]}};
-		this.meshes = { plan: { vertices: plane.vertices, vertexNormals: plane.normals, textures: [0, 0, 0, 1, 0, 0, 1, 1], indices: plane.indices, translation: [0, 0, -1] } };
+		this.meshes = { plan: { vertices: plane.vertices, normals: plane.normals, textures: [0, 0, 0, 1, 0, 0, 1, 1], indices: plane.indices, translation: [0, 0, -1] } };
 		GlUtils.initMeshBuffers(this.ctx, this.meshes.plan);
 		this.initTexture(this.meshes.plan, texture);
 	}
@@ -483,19 +483,17 @@ var CanvasShader = (function (_WebglEngine) {
 	_createClass(CanvasShader, {
 		createPlane: {
 			value: function createPlane(quads) {
-				var recipient = {
+				var plan = {
 					vertices: [],
 					normals: [],
 					indices: [] };
 
 				for (var y = 0; y <= quads; ++y) {
-					//			var v = y / quads;
 					var v = -1 + y * (2 / quads);
 					for (var x = 0; x <= quads; ++x) {
-						//				var u = x / quads;
 						var u = -1 + x * (2 / quads);
-						recipient.vertices = recipient.vertices.concat([u, v, 0]);
-						recipient.normals = recipient.normals.concat([0, 0, 1]);
+						plan.vertices = plan.vertices.concat([u, v, 0]);
+						plan.normals = plan.normals.concat([0, 0, 1]);
 					}
 				}
 
@@ -506,12 +504,12 @@ var CanvasShader = (function (_WebglEngine) {
 					for (var x = 0; x < quads; ++x) {
 						var offset0 = rowOffset0 + x;
 						var offset1 = rowOffset1 + x;
-						recipient.indices = recipient.indices.concat(offset0, offset0 + 1, offset1);
-						recipient.indices = recipient.indices.concat(offset1, offset0 + 1, offset1 + 1);
+						plan.indices = plan.indices.concat(offset0, offset0 + 1, offset1);
+						plan.indices = plan.indices.concat(offset1, offset0 + 1, offset1 + 1);
 					}
 				}
-				console.log(recipient);
-				return recipient;
+				console.log(plan);
+				return plan;
 			}
 		},
 		initShaders: {
@@ -575,7 +573,7 @@ var _classCallCheck = function (instance, Constructor) { if (!(instance instance
 var Default = function Default() {
 	_classCallCheck(this, Default);
 
-	this.type = "fragment", this.source = "\n            precision mediump float;\n\n\t\t\tvarying highp vec2 vTextureCoord;\n            varying highp vec3 vLighting;\n\t\t\tuniform sampler2D uSampler;\n\n\t\t\tvoid main(void){\n\t\t\t\tvec4 fragmentColor;\n\t\t\t\tfragmentColor = texture2D(uSampler, vTextureCoord);\n\n\t\t\t\tif (fragmentColor.a <= 0.1) discard;\n\n\t\t\t\tgl_FragColor = vec4(0.0,0.0,0.5,1.0);\n\t\t\t}\n\t\t";
+	this.type = "fragment", this.source = "\n            precision mediump float;\n\n\t\t\tvarying highp vec2 vTextureCoord;\n            varying highp vec3 vLighting;\n\t\t\tuniform sampler2D uSampler;\n\n\t\t\tvoid main(void){\n\t\t\t\tvec4 fragmentColor;\n\t\t\t\tfragmentColor = texture2D(uSampler, vTextureCoord);\n\n\t\t\t\tif (fragmentColor.a <= 0.1) discard;\n\n\t\t\t\tgl_FragColor = vec4(fragmentColor.rgb * vLighting, fragmentColor.a);\n\t\t\t}\n\t\t";
 	//			gl_FragColor = vec4(fragmentColor.rgb * vLighting, fragmentColor.a);
 	//				gl_FragColor = vec4(0.0,0.0,0.5,1.0);
 };
@@ -770,8 +768,8 @@ var Water = (function () {
         setParams: {
             value: function setParams(params) {
                 var shaderParams = {};
-                shaderParams.amplitude = 1;
-                shaderParams.frequency = 0.05;
+                shaderParams.amplitude = 0.5;
+                shaderParams.frequency = 0.8;
                 shaderParams.time = 0;
                 shaderParams.DELTA_TIME = 0;
                 shaderParams.LAST_TIME = Date.now();
@@ -798,7 +796,7 @@ var Water = (function () {
                 var shaderParams = this.shaderParams;
                 shaderParams.DELTA_TIME = Date.now() - shaderParams.LAST_TIME;
                 shaderParams.LAST_TIME = Date.now();
-                shaderParams.time += shaderParams.DELTA_TIME / 1000;
+                shaderParams.time += shaderParams.DELTA_TIME / 10000;
             }
         }
     });
@@ -913,6 +911,7 @@ var WebglEngine = (function () {
 				GlUtils.mvPushMatrix();
 				mesh.translation && GlUtils.mvTranslate(mesh.translation);
 				mesh.scale && GlUtils.mvScale([mesh.scale[0], mesh.scale[1], mesh.scale[2]]);
+				mesh.rotation && GlUtils.mvRotateMultiple(mesh.rotation[0], [1, 0, 0], mesh.rotation[1], [0, 1, 0]);
 
 				ctx.useProgram(this.shaderProgram);
 				ctx.bindBuffer(ctx.ARRAY_BUFFER, mesh.vertexBuffer);
@@ -926,8 +925,8 @@ var WebglEngine = (function () {
 				drawShaders();
 				ctx.bindBuffer(ctx.ELEMENT_ARRAY_BUFFER, mesh.indexBuffer);
 				GlUtils.setMatrixUniforms(ctx, this.shaderProgram, perspectiveMatrix);
-				//		ctx.drawElements(ctx.TRIANGLES, mesh.indexBuffer.numItems, ctx.UNSIGNED_SHORT, 0);
-				ctx.drawElements(ctx.LINE_STRIP, mesh.indexBuffer.numItems, ctx.UNSIGNED_SHORT, 0);
+				ctx.drawElements(ctx.TRIANGLES, mesh.indexBuffer.numItems, ctx.UNSIGNED_SHORT, 0);
+				//		ctx.drawElements(ctx.LINE_STRIP, mesh.indexBuffer.numItems, ctx.UNSIGNED_SHORT, 0);
 				GlUtils.mvPopMatrix();
 			}
 		},

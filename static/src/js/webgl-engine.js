@@ -33,6 +33,7 @@ class WebglEngine{
 		GlUtils.mvPushMatrix();
 		mesh.translation && GlUtils.mvTranslate(mesh.translation);
 		mesh.scale && GlUtils.mvScale([mesh.scale[0],mesh.scale[1],mesh.scale[2]]);
+		mesh.rotation && GlUtils.mvRotateMultiple(mesh.rotation[0], [1,0,0], mesh.rotation[1], [0,1,0]);
 
 		ctx.useProgram(this.shaderProgram);
 		ctx.bindBuffer(ctx.ARRAY_BUFFER, mesh.vertexBuffer);
@@ -46,8 +47,8 @@ class WebglEngine{
 		drawShaders();
 		ctx.bindBuffer(ctx.ELEMENT_ARRAY_BUFFER, mesh.indexBuffer);
 		GlUtils.setMatrixUniforms(ctx, this.shaderProgram, perspectiveMatrix);
-//		ctx.drawElements(ctx.TRIANGLES, mesh.indexBuffer.numItems, ctx.UNSIGNED_SHORT, 0);
-		ctx.drawElements(ctx.LINE_STRIP, mesh.indexBuffer.numItems, ctx.UNSIGNED_SHORT, 0);
+		ctx.drawElements(ctx.TRIANGLES, mesh.indexBuffer.numItems, ctx.UNSIGNED_SHORT, 0);
+//		ctx.drawElements(ctx.LINE_STRIP, mesh.indexBuffer.numItems, ctx.UNSIGNED_SHORT, 0);
 		GlUtils.mvPopMatrix();
 }
 	handleLoadedTexture(texture){

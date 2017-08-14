@@ -14,7 +14,7 @@ export default class Default{
 
 				if (fragmentColor.a <= 0.1) discard;
 
-				gl_FragColor = vec4(0.0,0.0,0.5,1.0);
+				gl_FragColor = vec4(fragmentColor.rgb * vLighting, fragmentColor.a);
 			}
 		`;
 	//			gl_FragColor = vec4(fragmentColor.rgb * vLighting, fragmentColor.a);

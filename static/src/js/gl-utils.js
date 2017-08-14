@@ -125,7 +125,7 @@ class GlUtils{
 		};
 	}
 	initMeshBuffers(gl, mesh ){
-		mesh.normalBuffer = this.buildBuffer(gl, gl.ARRAY_BUFFER, mesh.vertexNormals, 3);
+		mesh.normalBuffer = this.buildBuffer(gl, gl.ARRAY_BUFFER, mesh.normals, 3);
 		mesh.textureBuffer = this.buildBuffer(gl, gl.ARRAY_BUFFER, mesh.textures, 2);
 		mesh.vertexBuffer = this.buildBuffer(gl, gl.ARRAY_BUFFER, mesh.vertices, 3);
 		mesh.indexBuffer = this.buildBuffer(gl, gl.ELEMENT_ARRAY_BUFFER, mesh.indices, 1);

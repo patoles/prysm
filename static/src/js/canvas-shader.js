@@ -16,25 +16,23 @@ class CanvasShader extends WebglEngine{
 		this.initShaders();
 		var plane = this.createPlane(20);
 //		this.meshes = {"plan":{"vertices":[-1,-1,0,1,-1,0,1,1,0,-1,1,0],"vertexNormals":[0,0,1,0,0,1,0,0,1,0,0,1],"textures":[0,0,0,1,0,0,1,1],"indices":[0,1,2,0,2,3], "translation":[0.0,0.0,-1.0]}};
-		this.meshes = {"plan":{"vertices":plane.vertices,"vertexNormals":plane.normals,"textures":[0,0,0,1,0,0,1,1],"indices":plane.indices, "translation":[0.0,0.0,-1.0]}};
+		this.meshes = {"plan":{"vertices":plane.vertices,"normals":plane.normals,"textures":[0,0,0,1,0,0,1,1],"indices":plane.indices, "translation":[0.0,0.0,-1.0]}};
 		GlUtils.initMeshBuffers(this.ctx, this.meshes.plan);
 		this.initTexture(this.meshes.plan, texture);
 	}
 	createPlane(quads){		
-		var recipient = {
+		var plan = {
 			vertices: [],
 			normals: [],
 			indices: [],
 		};
 
 		for (var y = 0; y <= quads; ++y) {
-//			var v = y / quads;
 			var v = -1 + (y * (2 / quads));
 			for (var x = 0; x <= quads; ++x) {
-//				var u = x / quads;
 				var u = -1 + (x * (2 / quads));
-				recipient.vertices = recipient.vertices.concat([u, v, 0])
-				recipient.normals = recipient.normals.concat([0, 0, 1])
+				plan.vertices = plan.vertices.concat([u, v, 0])
+				plan.normals = plan.normals.concat([0, 0, 1])
 			}
 		}
 
@@ -45,12 +43,12 @@ class CanvasShader extends WebglEngine{
 			for (var x = 0; x < quads; ++x) {
 				var offset0 = rowOffset0 + x;
 				var offset1 = rowOffset1 + x;
-				recipient.indices = recipient.indices.concat(offset0, offset0 + 1, offset1);
-				recipient.indices = recipient.indices.concat(offset1, offset0 + 1, offset1 + 1);
+				plan.indices = plan.indices.concat(offset0, offset0 + 1, offset1);
+				plan.indices = plan.indices.concat(offset1, offset0 + 1, offset1 + 1);
 			}
 		}
-		console.log(recipient);
-		return recipient;
+		console.log(plan);
+		return plan;
 	}
 	initShaders(){
 		GlUtils.initShaders(this, this.ctx, this.fragment, this.vertex);
