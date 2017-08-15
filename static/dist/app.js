@@ -122,7 +122,7 @@ var GlUtils = (function () {
 				ctx.clearColor(0, 0, 0, 0);
 				ctx.enable(ctx.DEPTH_TEST);
 				ctx.depthFunc(ctx.LEQUAL);
-				ctx.pixelStorei(ctx.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
+				//		ctx.pixelStorei(ctx.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
 				ctx.clear(ctx.COLOR_BUFFER_BIT | ctx.DEPTH_BUFFER_BIT);
 				canvas.style.visibility = "visible";
 				parent.appendChild(canvas);
@@ -184,10 +184,8 @@ var GlUtils = (function () {
 				ctx.enableVertexAttribArray(shaderProgram.vertexPositionAttribute);
 				shaderProgram.vertexNormalAttribute = ctx.getAttribLocation(shaderProgram, "aVertexNormal");
 				ctx.enableVertexAttribArray(shaderProgram.vertexNormalAttribute);
-				/*
-    		shaderProgram.textureCoordAttribute = ctx.getAttribLocation(shaderProgram, "aTextureCoord");
-    		ctx.enableVertexAttribArray(shaderProgram.textureCoordAttribute);
-    */
+				shaderProgram.textureCoordAttribute = ctx.getAttribLocation(shaderProgram, "aTextureCoord");
+				ctx.enableVertexAttribArray(shaderProgram.textureCoordAttribute);
 				shaderProgram.samplerUniform = ctx.getUniformLocation(shaderProgram, "uSampler");
 				shaderProgram.screenRatio = ctx.getUniformLocation(shaderProgram, "screenRatio");
 				self.shaderProgram = shaderProgram;
@@ -408,7 +406,7 @@ var CanvasShader = (function (_WebglEngine) {
 		this.vertex.setParams && this.vertex.setParams(params.vertex);
 		this.initClick(this.canvas);
 		this.initShaders();
-		var plane = this.createPlane(20);
+		var plane = this.createPlane(4);
 		plane.translation = [0, 0, -1];
 		//		plane.rotation = [0,80,0];
 		this.meshes = { plane: plane };
@@ -647,7 +645,7 @@ var Default = function Default() {
     _classCallCheck(this, Default);
 
     this.type = "vertex";
-    this.source = "\n            precision highp float;\n            attribute highp vec3 aVertexNormal;\n            attribute highp vec3 aVertexPosition;\n            attribute highp vec2 aTextureCoord;\n\n            uniform highp mat4 uNormalMatrix;\n            uniform highp mat4 uMVMatrix;\n\t\t\tuniform highp mat4 uPMatrix;\n\n            varying highp vec2 vTextureCoord;\n            varying highp vec3 vLighting;\n\n            const vec2 madd=vec2(0.5, 0.5);\n\n\n            void main(void){\n                gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition.xy, 0.0, 1.0);\n                vTextureCoord = aVertexPosition.xy*madd+madd;\n\n                highp vec3 ambientLight = vec3(1.0, 1.0, 1.0);\n                highp vec3 directionalLightColor = vec3(1.0, 0.0, 0.0);\n                highp vec3 directionalVector = vec3(0.85, 0.8, -0.40);\n\n                highp vec4 transformedNormal = uNormalMatrix * vec4(aVertexNormal, 1.0);\n\n                highp float directional = max(dot(transformedNormal.xyz, directionalVector), 0.0);\n                vLighting = ambientLight + (directionalLightColor * directional);\n            }\n        ";
+    this.source = "\n            precision highp float;\n            attribute highp vec3 aVertexNormal;\n            attribute highp vec3 aVertexPosition;\n            attribute highp vec2 aTextureCoord;\n\n            uniform highp mat4 uNormalMatrix;\n            uniform highp mat4 uMVMatrix;\n\t\t\tuniform highp mat4 uPMatrix;\n\n            varying highp vec2 vTextureCoord;\n            varying highp vec3 vLighting;\n\n            const vec2 madd=vec2(0.5, 0.5);\n\n\n            void main(void){\n                gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition.xy, 0.0, 1.0);\n                vTextureCoord = aVertexPosition.xy*madd+madd;\n                vTextureCoord = aTextureCoord;\n\n                highp vec3 ambientLight = vec3(1.0, 1.0, 1.0);\n                highp vec3 directionalLightColor = vec3(0.0, 0.0, 0.0);\n                highp vec3 directionalVector = vec3(0.85, 0.8, -0.40);\n\n                highp vec4 transformedNormal = uNormalMatrix * vec4(aVertexNormal, 1.0);\n\n                highp float directional = max(dot(transformedNormal.xyz, directionalVector), 0.0);\n                vLighting = ambientLight + (directionalLightColor * directional);\n            }\n        ";
     /*
             gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition.xy, 0.0, 1.0);
             vTextureCoord = aVertexPosition.xy*madd+madd;
@@ -831,10 +829,9 @@ var WebglEngine = (function () {
 				ctx.vertexAttribPointer(this.shaderProgram.vertexPositionAttribute, mesh.vertexBuffer.itemSize, ctx.FLOAT, false, 0, 0);
 				ctx.bindBuffer(ctx.ARRAY_BUFFER, mesh.normalBuffer);
 				ctx.vertexAttribPointer(this.shaderProgram.vertexNormalAttribute, mesh.normalBuffer.itemSize, ctx.FLOAT, false, 0, 0);
-				/*
-    		ctx.bindBuffer(ctx.ARRAY_BUFFER, mesh.textureBuffer);
-    		ctx.vertexAttribPointer(this.shaderProgram.textureCoordAttribute, mesh.textureBuffer.itemSize, ctx.FLOAT, false, 0, 0);
-    */
+				ctx.bindBuffer(ctx.ARRAY_BUFFER, mesh.textureBuffer);
+				ctx.vertexAttribPointer(this.shaderProgram.textureCoordAttribute, mesh.textureBuffer.itemSize, ctx.FLOAT, false, 0, 0);
+
 				ctx.activeTexture(ctx.TEXTURE0);
 				ctx.bindTexture(ctx.TEXTURE_2D, mesh.texture);
 				ctx.uniform1i(this.shaderProgram.samplerUniform, 0);
@@ -881,7 +878,8 @@ var WebglEngine = (function () {
 		createPlane: {
 			value: function createPlane(quads) {
 				var plan = {
-					vertices: [], normals: [], indices: [], textures: [0, 0, 0, 1, 0, 0, 1, 1]
+					vertices: [], normals: [], indices: [],
+					textures: [0, 0, 0, 1, 1, 0, 0, 1, 1, 1, 1, 0]
 				};
 				for (var y = 0; y <= quads; ++y) {
 					var v = -1 + y * (2 / quads);
@@ -902,6 +900,39 @@ var WebglEngine = (function () {
 						plan.indices = plan.indices.concat(offset1, offset0 + 1, offset1 + 1);
 					}
 				}
+				console.log(plan);
+				/*
+    	var vertexPositionData = [];
+        var normalData = [];
+        var textureCoordData = [];
+        for (var latNumber = 0; latNumber <= latitudeBands; latNumber++) {
+          var theta = latNumber * Math.PI / latitudeBands;
+          var sinTheta = Math.sin(theta);
+          var cosTheta = Math.cos(theta);
+    
+          for (var longNumber = 0; longNumber <= longitudeBands; longNumber++) {
+            var phi = longNumber * 2 * Math.PI / longitudeBands;
+            var sinPhi = Math.sin(phi);
+            var cosPhi = Math.cos(phi);
+    
+            var x = cosPhi * sinTheta;
+            var y = cosTheta;
+            var z = sinPhi * sinTheta;
+            var u = 1 - (longNumber / longitudeBands);
+            var v = 1 - (latNumber / latitudeBands);
+    
+            normalData.push(x);
+            normalData.push(y);
+            normalData.push(z);
+            textureCoordData.push(u);
+            textureCoordData.push(v);
+            vertexPositionData.push(radius * x);
+            vertexPositionData.push(radius * y);
+            vertexPositionData.push(radius * z);
+          }
+        }
+    */
+
 				return plan;
 			}
 		}

@@ -39,7 +39,7 @@ class GlUtils{
 		ctx.clearColor(0.0, 0.0, 0.0, 0.0);
 		ctx.enable(ctx.DEPTH_TEST);
 		ctx.depthFunc(ctx.LEQUAL);
-		ctx.pixelStorei(ctx.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
+//		ctx.pixelStorei(ctx.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
 		ctx.clear(ctx.COLOR_BUFFER_BIT | ctx.DEPTH_BUFFER_BIT);
 		canvas.style.visibility = 'visible';
 		parent.appendChild(canvas);
@@ -53,7 +53,7 @@ class GlUtils{
 			center:{x:self.realWidth / 2, y:self.realHeight / 2}
 		};
 	}
-	initMeshBuffers(gl, mesh ){
+	initMeshBuffers(gl, mesh){
 		mesh.normalBuffer = this.buildBuffer(gl, gl.ARRAY_BUFFER, mesh.normals, 3);
 		mesh.textureBuffer = this.buildBuffer(gl, gl.ARRAY_BUFFER, mesh.textures, 2);
 		mesh.vertexBuffer = this.buildBuffer(gl, gl.ARRAY_BUFFER, mesh.vertices, 3);
@@ -98,10 +98,8 @@ class GlUtils{
 		ctx.enableVertexAttribArray(shaderProgram.vertexPositionAttribute);
 		shaderProgram.vertexNormalAttribute = ctx.getAttribLocation(shaderProgram, "aVertexNormal");
 		ctx.enableVertexAttribArray(shaderProgram.vertexNormalAttribute);
-/*
 		shaderProgram.textureCoordAttribute = ctx.getAttribLocation(shaderProgram, "aTextureCoord");
 		ctx.enableVertexAttribArray(shaderProgram.textureCoordAttribute);
-*/
 		shaderProgram.samplerUniform = ctx.getUniformLocation(shaderProgram, "uSampler");
 		shaderProgram.screenRatio = ctx.getUniformLocation(shaderProgram, "screenRatio");
 		self.shaderProgram = shaderProgram;
