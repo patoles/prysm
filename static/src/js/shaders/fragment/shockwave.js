@@ -31,7 +31,7 @@ export default class Shockwave{
 				for (int count=0;count < MAX_WAVE_NBR;count++)
 				{
 					float distance = distance(uv*screenRatio, wave[count].center*screenRatio);
-					if ((distance <= (wave[count].time + wave[count].shockParams.z)) && (distance >= (wave[count].time - wave[count].shockParams.z)))
+					if (wave[count].hasShock && (distance <= (wave[count].time + wave[count].shockParams.z)) && (distance >= (wave[count].time - wave[count].shockParams.z)))
 					{
 						float diff = (distance - wave[count].time); 
 						float powDiff = 1.0 - pow(abs(diff*wave[count].shockParams.x), wave[count].shockParams.y); 
@@ -44,6 +44,7 @@ export default class Shockwave{
 				gl_FragColor = vec4(resFragmentColor.rgb * vLighting, resFragmentColor.a);
 			}
 		`;
+		//					if ((distance <= (wave[count].time + wave[count].shockParams.z)) && (distance >= (wave[count].time - wave[count].shockParams.z)))
 	}
 	setParams(params){
 		params = params || {};
@@ -114,7 +115,7 @@ export default class Shockwave{
 		var shaderParams = this.shaderParams;
 		var canvasInfo = this.canvasInfo;
 		var ratioPosX = coord.x / canvasInfo.width;
-		var ratioPosY =  1 - (coord.y / canvasInfo.height);
+		var ratioPosY = coord.y / canvasInfo.height;
 		var waveId = -1;
 		shaderParams.waveList.forEach((item, key) => {
 			if (!item.on && waveId === -1)

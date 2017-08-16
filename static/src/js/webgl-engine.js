@@ -55,7 +55,8 @@ class WebglEngine{
 	}
 	handleLoadedTexture(texture){
 		var ctx = this.ctx;
-		ctx.pixelStorei(ctx.UNPACK_FLIP_Y_WEBGL, true);
+//		ctx.pixelStorei(ctx.UNPACK_FLIP_Y_WEBGL, true);
+//		ctx.pixelStorei(ctx.UNPACK_FLIP_X_WEBGL, true);
 		ctx.bindTexture(ctx.TEXTURE_2D, texture);
 		ctx.texImage2D(ctx.TEXTURE_2D, 0, ctx.RGBA, ctx.RGBA, ctx.UNSIGNED_BYTE, texture.image);
 		ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MAG_FILTER, ctx.LINEAR);
@@ -81,15 +82,7 @@ class WebglEngine{
 	}
 	createPlane(quads){		
 		var plan = {
-			vertices: [], normals: [], indices: [],
-			textures:[
-				0,0,
-				0,1,
-				1,0,
-				0,1,
-				1,1,
-				1,0
-			]
+			vertices: [], normals: [], indices: [], textures:[]
 		};
 		for (var y = 0; y <= quads; ++y) {
 			var v = -1 + (y * (2 / quads));
@@ -97,6 +90,7 @@ class WebglEngine{
 				var u = -1 + (x * (2 / quads));
 				plan.vertices = plan.vertices.concat([u, v, 0])
 				plan.normals = plan.normals.concat([0, 0, 1])
+				plan.textures = plan.textures.concat([x / quads, 1 - (y / quads)]);
 			}
 		}
 		var rowSize = (quads + 1);
@@ -111,38 +105,6 @@ class WebglEngine{
 			}
 		}
 		console.log(plan);
-/*
-	var vertexPositionData = [];
-    var normalData = [];
-    var textureCoordData = [];
-    for (var latNumber = 0; latNumber <= latitudeBands; latNumber++) {
-      var theta = latNumber * Math.PI / latitudeBands;
-      var sinTheta = Math.sin(theta);
-      var cosTheta = Math.cos(theta);
-
-      for (var longNumber = 0; longNumber <= longitudeBands; longNumber++) {
-        var phi = longNumber * 2 * Math.PI / longitudeBands;
-        var sinPhi = Math.sin(phi);
-        var cosPhi = Math.cos(phi);
-
-        var x = cosPhi * sinTheta;
-        var y = cosTheta;
-        var z = sinPhi * sinTheta;
-        var u = 1 - (longNumber / longitudeBands);
-        var v = 1 - (latNumber / latitudeBands);
-
-        normalData.push(x);
-        normalData.push(y);
-        normalData.push(z);
-        textureCoordData.push(u);
-        textureCoordData.push(v);
-        vertexPositionData.push(radius * x);
-        vertexPositionData.push(radius * y);
-        vertexPositionData.push(radius * z);
-      }
-    }
-*/
-
 		return plan;
 	}
 }
