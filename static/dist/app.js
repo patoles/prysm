@@ -848,8 +848,6 @@ var WebglEngine = (function () {
 		handleLoadedTexture: {
 			value: function handleLoadedTexture(texture) {
 				var ctx = this.ctx;
-				//		ctx.pixelStorei(ctx.UNPACK_FLIP_Y_WEBGL, true);
-				//		ctx.pixelStorei(ctx.UNPACK_FLIP_X_WEBGL, true);
 				ctx.bindTexture(ctx.TEXTURE_2D, texture);
 				ctx.texImage2D(ctx.TEXTURE_2D, 0, ctx.RGBA, ctx.RGBA, ctx.UNSIGNED_BYTE, texture.image);
 				ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MAG_FILTER, ctx.LINEAR);
@@ -902,7 +900,6 @@ var WebglEngine = (function () {
 						plan.indices = plan.indices.concat(offset1, offset0 + 1, offset1 + 1);
 					}
 				}
-				console.log(plan);
 				return plan;
 			}
 		}
