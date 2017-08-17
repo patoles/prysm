@@ -15,36 +15,31 @@ export default class Shockwave{
 				vec2 center;
 				float time;
 				vec3 shockParams;
-				bool hasShock;
 			};
 			uniform waveStruct wave[MAX_WAVE_NBR];
 
 			void main(void){
-				vec4 fragmentColor;
-				fragmentColor = texture2D(uSampler, vTextureCoord);
-
-				if (fragmentColor.a <= 0.1) discard;
-
 				vec2 uv = vTextureCoord.xy;
 				vec2 texCoord = uv;
 
 				for (int count=0;count < MAX_WAVE_NBR;count++)
 				{
-					float distance = distance(uv*screenRatio, wave[count].center*screenRatio);
-					if (wave[count].hasShock && (distance <= (wave[count].time + wave[count].shockParams.z)) && (distance >= (wave[count].time - wave[count].shockParams.z)))
+					float distance = distance(uv, wave[count].center);
+					if ((distance <= (wave[count].time + wave[count].shockParams.z)) && (distance >= (wave[count].time - wave[count].shockParams.z)))
 					{
 						float diff = (distance - wave[count].time); 
 						float powDiff = 1.0 - pow(abs(diff*wave[count].shockParams.x), wave[count].shockParams.y); 
-						float diffTime = diff  * powDiff;
-						vec2 diffUV = normalize((uv * screenRatio) - (wave[count].center * screenRatio)); 
+						float diffTime = diff * powDiff;
+						vec2 diffUV = normalize(uv - wave[count].center); 
 						texCoord = uv + (diffUV * diffTime);
 					}
 				}
-				vec4 resFragmentColor = texture2D(uSampler, texCoord);
-				gl_FragColor = vec4(resFragmentColor.rgb * vLighting, resFragmentColor.a);
+				vec4 fragmentColor = texture2D(uSampler, texCoord);
+				if (fragmentColor.a <= 0.1) discard;
+				gl_FragColor = vec4(fragmentColor.rgb * vLighting, fragmentColor.a);
 			}
 		`;
-		//					if ((distance <= (wave[count].time + wave[count].shockParams.z)) && (distance >= (wave[count].time - wave[count].shockParams.z)))
+		// Amplitude?, Refraction?, Width?
 	}
 	setParams(params){
 		params = params || {};
@@ -57,7 +52,7 @@ export default class Shockwave{
 		shaderParams.waveParams = {shockParams, speed};
         shaderParams.waveList = [];
 		for (var x = 0;x < shaderParams.WAVE_LIST_SIZE;x++)
-			shaderParams.waveList.push({time:0, center:[0, 0], on:false, shockParams:shaderParams.waveParams.shockParams, speed:shaderParams.waveParams.speed});
+			shaderParams.waveList.push({time:0, center:[-100,-100], on:false, shockParams:shaderParams.waveParams.shockParams, speed:shaderParams.waveParams.speed});
 		this.shaderParams = shaderParams;
 	}
     init(ctx, shaderProgram){
@@ -68,13 +63,11 @@ export default class Shockwave{
 			shaderProgram.wave[key].center = ctx.getUniformLocation(shaderProgram, "wave[" + key + "].center");
 			shaderProgram.wave[key].time = ctx.getUniformLocation(shaderProgram, "wave[" + key + "].time");
 			shaderProgram.wave[key].shockParams = ctx.getUniformLocation(shaderProgram, "wave[" + key + "].shockParams");
-			shaderProgram.wave[key].hasShock = ctx.getUniformLocation(shaderProgram, "wave[" + key + "].hasShock");
 		});
     }
 	draw(ctx, shaderProgram){
 		var shaderParams = this.shaderParams;
 		shaderParams.waveList.forEach((item, key) => {
-			ctx.uniform1i(shaderProgram.wave[key].hasShock, item.on);
 			ctx.uniform2fv(shaderProgram.wave[key].center, item.center);
 			ctx.uniform1f(shaderProgram.wave[key].time, item.time);
 			ctx.uniform3fv(shaderProgram.wave[key].shockParams, item.shockParams);
@@ -89,7 +82,7 @@ export default class Shockwave{
 				if (item.time > shaderParams.WAVE_LIFESPAN)
 				{
 					item.on = false;
-					item.center = [0,0];
+					item.center = [-100,-100];
 					item.time = 0;
 				}
 			}

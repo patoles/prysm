@@ -501,8 +501,8 @@ var Shockwave = (function () {
 		_classCallCheck(this, Shockwave);
 
 		this.canvasInfo = canvasInfo;
-		this.type = "fragment", this.source = "\n\t\t\t#define MAX_WAVE_NBR 10\n\t\t\tprecision mediump float;\n\t\t\t\n\t\t\tvarying highp vec2 vTextureCoord;\n\t\t\tvarying highp vec3 vLighting;\n\t\t\tuniform sampler2D uSampler;\n\t\t\tuniform vec2 screenRatio;\n\t\t\t\n\t\t\tstruct waveStruct{\n\t\t\t\tvec2 center;\n\t\t\t\tfloat time;\n\t\t\t\tvec3 shockParams;\n\t\t\t\tbool hasShock;\n\t\t\t};\n\t\t\tuniform waveStruct wave[MAX_WAVE_NBR];\n\n\t\t\tvoid main(void){\n\t\t\t\tvec4 fragmentColor;\n\t\t\t\tfragmentColor = texture2D(uSampler, vTextureCoord);\n\n\t\t\t\tif (fragmentColor.a <= 0.1) discard;\n\n\t\t\t\tvec2 uv = vTextureCoord.xy;\n\t\t\t\tvec2 texCoord = uv;\n\n\t\t\t\tfor (int count=0;count < MAX_WAVE_NBR;count++)\n\t\t\t\t{\n\t\t\t\t\tfloat distance = distance(uv*screenRatio, wave[count].center*screenRatio);\n\t\t\t\t\tif (wave[count].hasShock && (distance <= (wave[count].time + wave[count].shockParams.z)) && (distance >= (wave[count].time - wave[count].shockParams.z)))\n\t\t\t\t\t{\n\t\t\t\t\t\tfloat diff = (distance - wave[count].time); \n\t\t\t\t\t\tfloat powDiff = 1.0 - pow(abs(diff*wave[count].shockParams.x), wave[count].shockParams.y); \n\t\t\t\t\t\tfloat diffTime = diff  * powDiff;\n\t\t\t\t\t\tvec2 diffUV = normalize((uv * screenRatio) - (wave[count].center * screenRatio)); \n\t\t\t\t\t\ttexCoord = uv + (diffUV * diffTime);\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t\tvec4 resFragmentColor = texture2D(uSampler, texCoord);\n\t\t\t\tgl_FragColor = vec4(resFragmentColor.rgb * vLighting, resFragmentColor.a);\n\t\t\t}\n\t\t";
-		//					if ((distance <= (wave[count].time + wave[count].shockParams.z)) && (distance >= (wave[count].time - wave[count].shockParams.z)))
+		this.type = "fragment", this.source = "\n\t\t\t#define MAX_WAVE_NBR 10\n\t\t\tprecision mediump float;\n\t\t\t\n\t\t\tvarying highp vec2 vTextureCoord;\n\t\t\tvarying highp vec3 vLighting;\n\t\t\tuniform sampler2D uSampler;\n\t\t\tuniform vec2 screenRatio;\n\t\t\t\n\t\t\tstruct waveStruct{\n\t\t\t\tvec2 center;\n\t\t\t\tfloat time;\n\t\t\t\tvec3 shockParams;\n\t\t\t};\n\t\t\tuniform waveStruct wave[MAX_WAVE_NBR];\n\n\t\t\tvoid main(void){\n\t\t\t\tvec2 uv = vTextureCoord.xy;\n\t\t\t\tvec2 texCoord = uv;\n\n\t\t\t\tfor (int count=0;count < MAX_WAVE_NBR;count++)\n\t\t\t\t{\n\t\t\t\t\tfloat distance = distance(uv, wave[count].center);\n\t\t\t\t\tif ((distance <= (wave[count].time + wave[count].shockParams.z)) && (distance >= (wave[count].time - wave[count].shockParams.z)))\n\t\t\t\t\t{\n\t\t\t\t\t\tfloat diff = (distance - wave[count].time); \n\t\t\t\t\t\tfloat powDiff = 1.0 - pow(abs(diff*wave[count].shockParams.x), wave[count].shockParams.y); \n\t\t\t\t\t\tfloat diffTime = diff * powDiff;\n\t\t\t\t\t\tvec2 diffUV = normalize(uv - wave[count].center); \n\t\t\t\t\t\ttexCoord = uv + (diffUV * diffTime);\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t\tvec4 fragmentColor = texture2D(uSampler, texCoord);\n\t\t\t\tif (fragmentColor.a <= 0.1) discard;\n\t\t\t\tgl_FragColor = vec4(fragmentColor.rgb * vLighting, fragmentColor.a);\n\t\t\t}\n\t\t";
+		// Amplitude?, Refraction?, Width?
 	}
 
 	_createClass(Shockwave, {
@@ -517,7 +517,7 @@ var Shockwave = (function () {
 				var shockParams = [params.x || 10.1, params.y || 0.8, params.z || 0.1];
 				shaderParams.waveParams = { shockParams: shockParams, speed: speed };
 				shaderParams.waveList = [];
-				for (var x = 0; x < shaderParams.WAVE_LIST_SIZE; x++) shaderParams.waveList.push({ time: 0, center: [0, 0], on: false, shockParams: shaderParams.waveParams.shockParams, speed: shaderParams.waveParams.speed });
+				for (var x = 0; x < shaderParams.WAVE_LIST_SIZE; x++) shaderParams.waveList.push({ time: 0, center: [-100, -100], on: false, shockParams: shaderParams.waveParams.shockParams, speed: shaderParams.waveParams.speed });
 				this.shaderParams = shaderParams;
 			}
 		},
@@ -530,7 +530,6 @@ var Shockwave = (function () {
 					shaderProgram.wave[key].center = ctx.getUniformLocation(shaderProgram, "wave[" + key + "].center");
 					shaderProgram.wave[key].time = ctx.getUniformLocation(shaderProgram, "wave[" + key + "].time");
 					shaderProgram.wave[key].shockParams = ctx.getUniformLocation(shaderProgram, "wave[" + key + "].shockParams");
-					shaderProgram.wave[key].hasShock = ctx.getUniformLocation(shaderProgram, "wave[" + key + "].hasShock");
 				});
 			}
 		},
@@ -538,7 +537,6 @@ var Shockwave = (function () {
 			value: function draw(ctx, shaderProgram) {
 				var shaderParams = this.shaderParams;
 				shaderParams.waveList.forEach(function (item, key) {
-					ctx.uniform1i(shaderProgram.wave[key].hasShock, item.on);
 					ctx.uniform2fv(shaderProgram.wave[key].center, item.center);
 					ctx.uniform1f(shaderProgram.wave[key].time, item.time);
 					ctx.uniform3fv(shaderProgram.wave[key].shockParams, item.shockParams);
@@ -553,7 +551,7 @@ var Shockwave = (function () {
 						item.time += item.speed;
 						if (item.time > shaderParams.WAVE_LIFESPAN) {
 							item.on = false;
-							item.center = [0, 0];
+							item.center = [-100, -100];
 							item.time = 0;
 						}
 					}
