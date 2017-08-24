@@ -2,7 +2,7 @@ export default class Default{
 	constructor(){
 		this.type = 'fragment',
         this.source = `
-            precision mediump float;
+            precision highp float;
 
 			varying highp vec2 vTextureCoord;
             varying highp vec3 vLighting;

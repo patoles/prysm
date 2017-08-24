@@ -4,7 +4,7 @@ export default class Shockwave{
 		this.type = 'fragment',
 		this.source = `
 			#define MAX_WAVE_NBR 10
-			precision mediump float;
+            precision highp float;
 			
 			varying highp vec2 vTextureCoord;
 			varying highp vec3 vLighting;

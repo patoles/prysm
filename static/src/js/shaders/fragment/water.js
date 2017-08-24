@@ -5,22 +5,21 @@ export default class Water{
             #define TAU 6.28318530718
             #define MAX_ITER 5
 
-            precision mediump float;
+            precision highp float;
 
 			varying highp vec2 vTextureCoord;
             varying highp vec3 vLighting;
-			uniform sampler2D uSampler;
+            uniform sampler2D uSampler;
+            uniform vec2 screenRatio;
 
             uniform float f_time;
-
-            vec3 iResolution = vec3(1, 1, 0);
 
             void main(void) 
             {
                 vec4 fragmentColor;
 				fragmentColor = texture2D(uSampler, vTextureCoord);
                 float time = f_time;
-                vec2 uv = vTextureCoord.xy / iResolution.xy;
+                vec2 uv = vTextureCoord.xy / screenRatio.xy;
                 
                 vec2 p = mod(uv*TAU, TAU)-250.0;
 
