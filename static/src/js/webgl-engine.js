@@ -78,9 +78,9 @@ class WebglEngine{
 		else
 			object.texture.image.addEventListener('load', (event) => {action();});
 	}
-	createPlane(quads){		
+	createPlane(quads){
 		var plan = {
-			vertices: [], normals: [], indices: [], textures:[]
+			vertices:[], normals:[], indices:[], textures:[]
 		};
 		for (var y = 0; y <= quads; ++y) {
 			var v = -1 + (y * (2 / quads));

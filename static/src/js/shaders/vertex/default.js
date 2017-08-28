@@ -28,9 +28,5 @@ export default class Default{
                 vLighting = ambientLight + (directionalLightColor * directional);
             }
         `;
-        /*
-                gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition.xy, 0.0, 1.0);
-                vTextureCoord = aVertexPosition.xy*madd+madd;
-        */
     }
 };

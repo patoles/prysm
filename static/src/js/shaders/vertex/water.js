@@ -132,7 +132,6 @@ export default class Water{
                 vLighting = ambientLight + (directionalLightColor * directional);
             }
         `;
-    //                gl_Position = projectionMatrix * modelViewMatrix * vec4( newPosition, 1.0 );
     }
 	setParams(params){
         params = params || {};

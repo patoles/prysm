@@ -49,7 +49,7 @@ export default class Water{
                 float c = 1.0;
                 float inten = .005;
 
-                for (int n = 0; n < MAX_ITER; n++) 
+                for (int n = 0; n < MAX_ITER; n++)
                 {
                     float t = time * (1.0 - (3.5 / float(n+1)));
                     i = p + vec2(cos(t - i.x) + sin(t + i.y), sin(t - i.y) + cos(t + i.x));
