@@ -16,7 +16,7 @@ class CanvasShader extends WebglEngine{
 		this.initShaders();
 		var plane = this.createPlane(40);
 		plane.translation = [0,0,-1];
-//		plane.rotation = [0,80,0];
+		plane.scale = [1 / this.frameInfo.screenRatio,1,1];
 		this.meshes = {"plane":plane};
 		GlUtils.initMeshBuffers(this.ctx, this.meshes.plane);
 		this.initTexture(this.meshes.plane, texture);

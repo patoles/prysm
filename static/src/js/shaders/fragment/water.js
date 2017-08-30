@@ -25,7 +25,7 @@ export default class Water{
 
             void main(void) 
             {
-                vec2 uv = vTextureCoord.xy / screenRatio.xy;
+                vec2 uv = vTextureCoord.xy;
 				vec2 texCoord = uv;
 				for (int count=0;count < MAX_WAVE_NBR;count++)
 				{
