@@ -14,7 +14,7 @@ class CanvasShader extends WebglEngine{
 		this.vertex.setParams && this.vertex.setParams(params.vertex);
 		this.initClick(this.canvas);
 		this.initShaders();
-		var plane = this.createPlane(40);
+		var plane = this.createPlane(1);
 		plane.translation = [0,0,-1];
 		plane.scale = [1 / this.frameInfo.screenRatio,1,1];
 		this.meshes = {"plane":plane};
