@@ -90,7 +90,7 @@ export default class Cloud{
 			{
 				vec4 sum = vec4(0.0);
 
-				float t = 0.0;//0.05*texelFetch( uSampler, px&255, 0 ).x;
+				float t = 0.0;
 
 				MARCH(30,map5);
 				MARCH(30,map4);
@@ -135,7 +135,7 @@ export default class Cloud{
 				
 				// camera
 				vec3 ro = 4.0 * normalize(vec3(sin(3.0 * m.x), 0.4 * m.y, cos(3.0 * m.x)));
-				vec3 ta = vec3(0.0, -1.0, 0.0);
+				vec3 ta = vec3(0.0, -1.5, 0.0);
 				mat3 ca = setCamera( ro, ta, 0.0 );
 				// ray
 				vec3 rd = ca * normalize( vec3(p.xy, 1.5));
