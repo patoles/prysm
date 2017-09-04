@@ -84,18 +84,18 @@ class RenderEngine{
 		else
 			object.texture.image.addEventListener('load', (event) => {action();});
 	}
-	// createPlane(quads) creates a plan mesh with X quads.
+	// createPlane(quads) creates a plane mesh with X quads.
 	createPlane(quads){
-		var plan = {
+		var plane = {
 			vertices:[], normals:[], indices:[], textures:[]
 		};
 		for (var y = 0; y <= quads; ++y) {
 			var v = -1 + (y * (2 / quads));
 			for (var x = 0; x <= quads; ++x) {
 				var u = -1 + (x * (2 / quads));
-				plan.vertices = plan.vertices.concat([u, v, 0])
-				plan.normals = plan.normals.concat([0, 0, 1])
-				plan.textures = plan.textures.concat([x / quads, 1 - (y / quads)]);
+				plane.vertices = plane.vertices.concat([u, v, 0])
+				plane.normals = plane.normals.concat([0, 0, 1])
+				plane.textures = plane.textures.concat([x / quads, 1 - (y / quads)]);
 			}
 		}
 		var rowSize = (quads + 1);
@@ -105,11 +105,11 @@ class RenderEngine{
 			for (var x = 0; x < quads; ++x) {
 				var offset0 = rowOffset0 + x;
 				var offset1 = rowOffset1 + x;
-				plan.indices = plan.indices.concat(offset0, offset0 + 1, offset1);
-				plan.indices = plan.indices.concat(offset1, offset0 + 1, offset1 + 1);
+				plane.indices = plane.indices.concat(offset0, offset0 + 1, offset1);
+				plane.indices = plane.indices.concat(offset1, offset0 + 1, offset1 + 1);
 			}
 		}
-		return plan;
+		return plane;
 	}
 }
 
