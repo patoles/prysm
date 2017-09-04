@@ -15,8 +15,8 @@ class ShaderHandler extends RenderEngine{
 		this.initClick(this.canvas);
 		this.initShaders();
 		var plane = this.createPlane(40);
-		plane.translation = [0,0,-1];
-		plane.scale = [1 / this.frameInfo.screenRatio,1,1];
+		plane.translation = [0, 0, -1];
+		plane.scale = [1 / this.frameInfo.screenRatio, 1, 1];
 		this.meshes = {plane};
 		GlUtils.initMeshBuffers(this.ctx, this.meshes.plane);
 		this.initTexture(this.meshes.plane, texture);

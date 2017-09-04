@@ -1,11 +1,11 @@
 Matrix.Translation = function(v){
-	if (v.elements.length == 2){
+	if (v.elements.length === 2){
 		var r = Matrix.I(3);
 		r.elements[2][0] = v.elements[0];
 		r.elements[2][1] = v.elements[1];
 		return r;
 	}
-	if (v.elements.length == 3){
+	if (v.elements.length === 3){
 		var r = Matrix.I(4);
 		r.elements[0][3] = v.elements[0];
 		r.elements[1][3] = v.elements[1];
@@ -14,22 +14,18 @@ Matrix.Translation = function(v){
 	}
 	throw "Invalid length for Translation";
 }
-
 Matrix.prototype.flatten = function(){
 	var result = [];
-	if (this.elements.length == 0)
+	if (this.elements.length === 0)
 		return [];
-
 	for (var j = 0; j < this.elements[0].length; j++)
 		for (var i = 0; i < this.elements.length; i++)
 			result.push(this.elements[i][j]);
 	return result;
 }
-
 Matrix.prototype.ensure4x4 = function(){
-	if (this.elements.length == 4 && this.elements[0].length == 4)
+	if (this.elements.length === 4 && this.elements[0].length === 4)
 		return this;
-
 	if (this.elements.length > 4 || this.elements[0].length > 4)
 		return null;
 	for (var i = 0; i < this.elements.length; i++) {
@@ -58,54 +54,50 @@ class GlUtils{
 		this.mvMatrixStack = [];
 		this.mvMatrix = [];
 	}
-	setupCanvas(self, parent){
-		self.active = true;
-		var frameInfo = {
-			fpsInterval:0, startTime:0, now:0,
-			then:0, elapsed:0, fps:60, fpsRate:0, screenRatio:1
-		};
+	setupCanvas(engine, parent){
 		var canvas = document.createElement('canvas');
 		canvas.className = 'shapeshift-canvas hide';
-		canvas.height = parent.clientHeight;
 		canvas.width = parent.clientWidth;
+		canvas.height = parent.clientHeight;
 		var ctx = this.webgl_support(canvas);
 		ctx.viewport(0, 0, canvas.width, canvas.height);
 		ctx.imageSmoothingEnabled = true;
 		ctx.imageSmoothingQuality = "high";
-		self.realWidth = canvas.width;
-		self.realHeight = canvas.height;
+		ctx.enable(ctx.DEPTH_TEST);
+		ctx.depthFunc(ctx.LEQUAL);
+		ctx.clear(ctx.COLOR_BUFFER_BIT | ctx.DEPTH_BUFFER_BIT);
+		engine.realWidth = canvas.width;
+		engine.realHeight = canvas.height;
 		/*** HD */
 		var devicePixelRatio = window.devicePixelRatio || 1;
 		var backingStoreRatio = ctx.webkitBackingStorePixelRatio || ctx.mozBackingStorePixelRatio || ctx.msBackingStorePixelRatio || ctx.oBackingStorePixelRatio || ctx.backingStorePixelRatio || 1;
 		var pixelRatio = devicePixelRatio / backingStoreRatio;
 		if (devicePixelRatio !== backingStoreRatio)
 		{
-			canvas.width = self.realWidth * pixelRatio;
-			canvas.height = self.realHeight * pixelRatio;
-			canvas.style.width = self.realWidth + 'px';
-			canvas.style.height = self.realHeight + 'px';
+			canvas.width = engine.realWidth * pixelRatio;
+			canvas.height = engine.realHeight * pixelRatio;
+			canvas.style.width = engine.realWidth + 'px';
+			canvas.style.height = engine.realHeight + 'px';
 			ctx.viewport(0, 0, canvas.width, canvas.height);
 		}
 		/* HD ***/
-		frameInfo.screenRatio = canvas.height / canvas.width;
+		var frameInfo = {
+			fpsInterval:0, startTime:Date.now(), now:0,
+			then:Date.now(), elapsed:0, fps:60, fpsRate:0, screenRatio:canvas.height / canvas.width
+		};
 		frameInfo.fpsInterval = 1000 / frameInfo.fps;
-		frameInfo.then = Date.now();
-		frameInfo.startTime = frameInfo.then;
-		ctx.clearColor(0.0, 0.0, 0.0, 0.0);
-		ctx.enable(ctx.DEPTH_TEST);
-		ctx.depthFunc(ctx.LEQUAL);
-		ctx.clear(ctx.COLOR_BUFFER_BIT | ctx.DEPTH_BUFFER_BIT);
 		canvas.style.visibility = 'visible';
 		parent.appendChild(canvas);
 		parent.style.visibility = 'hidden';
-		self.frameInfo = frameInfo;
-		self.canvas = canvas;
-		self.ctx = ctx;
-		self.shaderProgram = null;
-		self.canvasInfo = {
-			width:self.realWidth, height:self.realHeight,
-			center:{x:self.realWidth / 2, y:self.realHeight / 2}
+		engine.frameInfo = frameInfo;
+		engine.canvas = canvas;
+		engine.ctx = ctx;
+		engine.shaderProgram = null;
+		engine.canvasInfo = {
+			width:engine.realWidth, height:engine.realHeight,
+			center:{x:engine.realWidth / 2, y:engine.realHeight / 2}
 		};
+		engine.active = true;
 	}
 	initMeshBuffers(ctx, mesh){
 		mesh.normalBuffer = this.buildBuffer(ctx, ctx.ARRAY_BUFFER, mesh.normals, 3);
@@ -138,7 +130,7 @@ class GlUtils{
 		}
 		return shader;
 	}
-	initShaders(self, ctx, fs, vs){
+	initShaders(engine, ctx, fs, vs){
 		var fragmentShader = this.getShader(ctx, fs);
 		var vertexShader = this.getShader(ctx, vs);
 		var shaderProgram = ctx.createProgram();
@@ -156,7 +148,7 @@ class GlUtils{
 		ctx.enableVertexAttribArray(shaderProgram.textureCoordAttribute);
 		shaderProgram.samplerUniform = ctx.getUniformLocation(shaderProgram, "uSampler");
 		shaderProgram.screenRatio = ctx.getUniformLocation(shaderProgram, "screenRatio");
-		self.shaderProgram = shaderProgram;
+		engine.shaderProgram = shaderProgram;
 	}
 	webgl_support(canvas){
 		try{
@@ -172,13 +164,12 @@ class GlUtils{
 		return this.makeFrustum(xmin, xmax, ymin, ymax, znear, zfar);
 	}
 	makeFrustum(left, right, bottom, top, znear, zfar){
-		var X = 2*znear/(right-left);
-		var Y = 2*znear/(top-bottom);
-		var A = (right+left)/(right-left);
-		var B = (top+bottom)/(top-bottom);
-		var C = -(zfar+znear)/(zfar-znear);
-		var D = -2*zfar*znear/(zfar-znear);
-
+		var X = 2 * znear / (right - left);
+		var Y = 2 * znear / (top - bottom);
+		var A = (right + left) / (right - left);
+		var B = (top + bottom) / (top - bottom);
+		var C = -(zfar + znear) / (zfar - znear);
+		var D = -2 * zfar * znear / (zfar - znear);
 		return $M([[X, 0, A, 0],
 		[0, Y, B, 0],
 		[0, 0, C, D],
@@ -232,10 +223,12 @@ class GlUtils{
 	}
 	mvScale(size){
 		var m = Matrix.I(4);
-		m.elements = [[size[0], 0, 0, 0],
-				[0, size[1], 0, 0],
-				[0, 0, size[2], 0],
-				[0, 0, 0, 1]];
+		m.elements = [
+			[size[0], 0, 0, 0],
+			[0, size[1], 0, 0],
+			[0, 0, size[2], 0],
+			[0, 0, 0, 1]
+		];
 		this.multMatrix(m);
 	}
 }

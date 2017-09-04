@@ -27,13 +27,7 @@ module.exports = {
 			template: "html/index.html",
 			filename: "../../index.html",
 			ts:Date.now()
-		})
+		}),
+		new webpack.optimize.UglifyJsPlugin({compress: true})
 	]
-	/*
-	.concat([
-		new webpack
-		.optimize
-		.UglifyJsPlugin({ compress: true })
-	])
-	*/
 };
