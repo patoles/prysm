@@ -2,16 +2,20 @@ import GlUtils from './gl-utils.js';
 
 class RenderEngine{
 	constructor(parent){
+		// This will create and initialize the canvas and the webgl context.
 		GlUtils.setupCanvas(this, parent);
 	}
+	// checkFrameInterval() checks if it's time for the next draw call.
 	checkFrameInterval(){
 		this.frameInfo.now = Date.now();
 		this.frameInfo.elapsed = this.frameInfo.now - this.frameInfo.then;
 		return this.frameInfo.elapsed > this.frameInfo.fpsInterval;
 	}
+	// clearScreen() clear the canvas before each draw call.
 	clearScreen(){
 		this.ctx.clearColor(0.0, 0.0, 0.0, 0.0);
 	}
+	// render() is the main loop of the engine. It will make a draw call every X milliseconds.
 	render(){
 		if (this.active)
 		{
@@ -24,7 +28,9 @@ class RenderEngine{
 			}
 		}
 	}
+	// draw() is called in each render loop. It needs to be overloaded in the child class.
 	draw(){}
+	// drawObject(mesh, drawShaders) define the perspective, transform (translate, rotate, scale) and draw the mesh, and call the shaders's draw() methods.
 	drawObject(mesh, drawShaders){
 		var ctx = this.ctx;
 		ctx.clear(ctx.COLOR_BUFFER_BIT | ctx.DEPTH_BUFFER_BIT);
@@ -51,6 +57,7 @@ class RenderEngine{
 		ctx.drawElements(ctx.TRIANGLES, mesh.indexBuffer.numItems, ctx.UNSIGNED_SHORT, 0);
 		GlUtils.mvPopMatrix();
 	}
+	// handleLoadedTexture(texture) bind the texture to the webgl context and sets the texture parameters.
 	handleLoadedTexture(texture){
 		var ctx = this.ctx;
 		ctx.bindTexture(ctx.TEXTURE_2D, texture);
@@ -61,6 +68,7 @@ class RenderEngine{
 		ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_T, ctx.CLAMP_TO_EDGE);
 		ctx.bindTexture(ctx.TEXTURE_2D, null);
 	}
+	// initTexture(object, url) load and create the webgl texture.
 	initTexture(object, url){
 		object.texture = this.ctx.createTexture();
 		object.texture.image = new Image();
@@ -76,6 +84,7 @@ class RenderEngine{
 		else
 			object.texture.image.addEventListener('load', (event) => {action();});
 	}
+	// createPlane(quads) creates a plan mesh with X quads.
 	createPlane(quads){
 		var plan = {
 			vertices:[], normals:[], indices:[], textures:[]
