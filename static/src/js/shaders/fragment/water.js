@@ -74,7 +74,7 @@ export default class Water{
         shaderParams.WAVE_LIFESPAN = 1.5;
         shaderParams.lastTouchTime = -1;
 		var speed = (params && params.speed) || 0.02;
-		var shockParams = [params.x || 10.1, params.y || 0.8, params.z || 0.1];
+		var shockParams = [params.amplitude || 10.1, params.refraction || 0.8, params.width || 0.1];
 		shaderParams.waveParams = {shockParams, speed};
         shaderParams.waveList = [];
 		for (var x = 0;x < shaderParams.WAVE_LIST_SIZE;x++)

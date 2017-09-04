@@ -77,6 +77,46 @@ var _createClass = (function () { function defineProperties(target, props) { for
 
 var _classCallCheck = function (instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } };
 
+Matrix.Translation = function (v) {
+	if (v.elements.length == 2) {
+		var r = Matrix.I(3);
+		r.elements[2][0] = v.elements[0];
+		r.elements[2][1] = v.elements[1];
+		return r;
+	}
+	if (v.elements.length == 3) {
+		var r = Matrix.I(4);
+		r.elements[0][3] = v.elements[0];
+		r.elements[1][3] = v.elements[1];
+		r.elements[2][3] = v.elements[2];
+		return r;
+	}
+	throw "Invalid length for Translation";
+};
+
+Matrix.prototype.flatten = function () {
+	var result = [];
+	if (this.elements.length == 0) return [];
+
+	for (var j = 0; j < this.elements[0].length; j++) for (var i = 0; i < this.elements.length; i++) result.push(this.elements[i][j]);
+	return result;
+};
+
+Matrix.prototype.ensure4x4 = function () {
+	if (this.elements.length == 4 && this.elements[0].length == 4) return this;
+
+	if (this.elements.length > 4 || this.elements[0].length > 4) return null;
+	for (var i = 0; i < this.elements.length; i++) {
+		for (var j = this.elements[i].length; j < 4; j++) {
+			if (i == j) this.elements[i].push(1);else this.elements[i].push(0);
+		}
+	}
+	for (var i = this.elements.length; i < 4; i++) {
+		if (i == 0) this.elements.push([1, 0, 0, 0]);else if (i == 1) this.elements.push([0, 1, 0, 0]);else if (i == 2) this.elements.push([0, 0, 1, 0]);else if (i == 3) this.elements.push([0, 0, 0, 1]);
+	}
+	return this;
+};
+
 var GlUtils = (function () {
 	function GlUtils() {
 		_classCallCheck(this, GlUtils);
@@ -94,7 +134,7 @@ var GlUtils = (function () {
 					then: 0, elapsed: 0, fps: 60, fpsRate: 0, screenRatio: 1
 				};
 				var canvas = document.createElement("canvas");
-				canvas.className = "canvas hide";
+				canvas.className = "shapeshift-canvas hide";
 				canvas.height = parent.clientHeight;
 				canvas.width = parent.clientWidth;
 				var ctx = this.webgl_support(canvas);
@@ -122,7 +162,6 @@ var GlUtils = (function () {
 				ctx.clearColor(0, 0, 0, 0);
 				ctx.enable(ctx.DEPTH_TEST);
 				ctx.depthFunc(ctx.LEQUAL);
-				//		ctx.pixelStorei(ctx.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
 				ctx.clear(ctx.COLOR_BUFFER_BIT | ctx.DEPTH_BUFFER_BIT);
 				canvas.style.visibility = "visible";
 				parent.appendChild(canvas);
@@ -138,33 +177,33 @@ var GlUtils = (function () {
 			}
 		},
 		initMeshBuffers: {
-			value: function initMeshBuffers(gl, mesh) {
-				mesh.normalBuffer = this.buildBuffer(gl, gl.ARRAY_BUFFER, mesh.normals, 3);
-				mesh.textureBuffer = this.buildBuffer(gl, gl.ARRAY_BUFFER, mesh.textures, 2);
-				mesh.vertexBuffer = this.buildBuffer(gl, gl.ARRAY_BUFFER, mesh.vertices, 3);
-				mesh.indexBuffer = this.buildBuffer(gl, gl.ELEMENT_ARRAY_BUFFER, mesh.indices, 1);
+			value: function initMeshBuffers(ctx, mesh) {
+				mesh.normalBuffer = this.buildBuffer(ctx, ctx.ARRAY_BUFFER, mesh.normals, 3);
+				mesh.textureBuffer = this.buildBuffer(ctx, ctx.ARRAY_BUFFER, mesh.textures, 2);
+				mesh.vertexBuffer = this.buildBuffer(ctx, ctx.ARRAY_BUFFER, mesh.vertices, 3);
+				mesh.indexBuffer = this.buildBuffer(ctx, ctx.ELEMENT_ARRAY_BUFFER, mesh.indices, 1);
 			}
 		},
 		buildBuffer: {
-			value: function buildBuffer(gl, type, data, itemSize) {
-				var buffer = gl.createBuffer();
-				var arrayView = type === gl.ARRAY_BUFFER ? Float32Array : Uint16Array;
-				gl.bindBuffer(type, buffer);
-				gl.bufferData(type, new arrayView(data), gl.STATIC_DRAW);
+			value: function buildBuffer(ctx, type, data, itemSize) {
+				var buffer = ctx.createBuffer();
+				var arrayView = type === ctx.ARRAY_BUFFER ? Float32Array : Uint16Array;
+				ctx.bindBuffer(type, buffer);
+				ctx.bufferData(type, new arrayView(data), ctx.STATIC_DRAW);
 				buffer.itemSize = itemSize;
 				buffer.numItems = data.length / itemSize;
 				return buffer;
 			}
 		},
 		getShader: {
-			value: function getShader(gl, shaderObj) {
+			value: function getShader(ctx, shaderObj) {
 				var shader;
-				if (shaderObj.type == "fragment") shader = gl.createShader(gl.FRAGMENT_SHADER);else if (shaderObj.type == "vertex") shader = gl.createShader(gl.VERTEX_SHADER);else {
+				if (shaderObj.type == "fragment") shader = ctx.createShader(ctx.FRAGMENT_SHADER);else if (shaderObj.type == "vertex") shader = ctx.createShader(ctx.VERTEX_SHADER);else {
 					return null;
-				}gl.shaderSource(shader, shaderObj.source);
-				gl.compileShader(shader);
-				if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-					alert("An error occurred compiling the shaders: " + gl.getShaderInfoLog(shader));
+				}ctx.shaderSource(shader, shaderObj.source);
+				ctx.compileShader(shader);
+				if (!ctx.getShaderParameter(shader, ctx.COMPILE_STATUS)) {
+					alert("An error occurred compiling the shaders: " + ctx.getShaderInfoLog(shader));
 					return null;
 				}
 				return shader;
@@ -206,7 +245,6 @@ var GlUtils = (function () {
 				var ymin = -ymax;
 				var xmin = ymin * aspect;
 				var xmax = ymax * aspect;
-
 				return this.makeFrustum(xmin, xmax, ymin, ymax, znear, zfar);
 			}
 		},
@@ -254,16 +292,12 @@ var GlUtils = (function () {
 				if (m) {
 					this.mvMatrixStack.push(m.dup());
 					mvMatrix = m.dup();
-				} else {
-					this.mvMatrixStack.push(this.mvMatrix.dup());
-				}
+				} else this.mvMatrixStack.push(this.mvMatrix.dup());
 			}
 		},
 		mvPopMatrix: {
 			value: function mvPopMatrix() {
-				if (!this.mvMatrixStack.length) {
-					throw "Can't pop from an empty matrix stack.";
-				}
+				if (!this.mvMatrixStack.length) throw "Can't pop from an empty matrix stack.";
 				this.mvMatrix = this.mvMatrixStack.pop();
 				return this.mvMatrix;
 			}
@@ -297,52 +331,6 @@ var GlUtils = (function () {
 	return GlUtils;
 })();
 
-Matrix.Translation = function (v) {
-	if (v.elements.length == 2) {
-		var r = Matrix.I(3);
-		r.elements[2][0] = v.elements[0];
-		r.elements[2][1] = v.elements[1];
-		return r;
-	}
-	if (v.elements.length == 3) {
-		var r = Matrix.I(4);
-		r.elements[0][3] = v.elements[0];
-		r.elements[1][3] = v.elements[1];
-		r.elements[2][3] = v.elements[2];
-		return r;
-	}
-	throw "Invalid length for Translation";
-};
-
-Matrix.prototype.flatten = function () {
-	var result = [];
-	if (this.elements.length == 0) return [];
-
-	for (var j = 0; j < this.elements[0].length; j++) for (var i = 0; i < this.elements.length; i++) result.push(this.elements[i][j]);
-	return result;
-};
-
-Matrix.prototype.ensure4x4 = function () {
-	if (this.elements.length == 4 && this.elements[0].length == 4) return this;
-
-	if (this.elements.length > 4 || this.elements[0].length > 4) return null;
-	for (var i = 0; i < this.elements.length; i++) {
-		for (var j = this.elements[i].length; j < 4; j++) {
-			if (i == j) this.elements[i].push(1);else this.elements[i].push(0);
-		}
-	}
-	for (var i = this.elements.length; i < 4; i++) {
-		if (i == 0) this.elements.push([1, 0, 0, 0]);else if (i == 1) this.elements.push([0, 1, 0, 0]);else if (i == 2) this.elements.push([0, 0, 1, 0]);else if (i == 3) this.elements.push([0, 0, 0, 1]);
-	}
-	return this;
-};
-
-Matrix.prototype.make3x3 = function () {
-	if (this.elements.length != 4 || this.elements[0].length != 4) return null;
-
-	return Matrix.create([[this.elements[0][0], this.elements[0][1], this.elements[0][2]], [this.elements[1][0], this.elements[1][1], this.elements[1][2]], [this.elements[2][0], this.elements[2][1], this.elements[2][2]]]);
-};
-
 var _GlUtils = new GlUtils();
 
 module.exports = _GlUtils;
@@ -358,115 +346,18 @@ var _interopRequire = function (obj) { return obj && obj.__esModule ? obj["defau
 
 var Shapeshift = _interopRequire(__webpack_require__(11));
 
-var item = document.getElementsByClassName("wavify")[0];
+var item = document.getElementById("test");
 var shape = new Shapeshift(item, {
     fragment: "water",
-    //    vertex:"water",
+    vertex: "water",
     params: {
-        fragment: { speed: 0.02, x: 10.1, y: 0.8, z: 0.12 },
+        fragment: { speed: 0.02, amplitude: 10.1, refraction: 0.8, width: 0.12 },
         vertex: { amplitude: 0.05, frequency: 1 }
     }
 });
 
 /***/ }),
-/* 2 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var _interopRequire = function (obj) { return obj && obj.__esModule ? obj["default"] : obj; };
-
-var _createClass = (function () { function defineProperties(target, props) { for (var key in props) { var prop = props[key]; prop.configurable = true; if (prop.value) prop.writable = true; } Object.defineProperties(target, props); } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
-
-var _get = function get(object, property, receiver) { var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc && desc.writable) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
-
-var _inherits = function (subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) subClass.__proto__ = superClass; };
-
-var _classCallCheck = function (instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } };
-
-var WebglEngine = _interopRequire(__webpack_require__(12));
-
-var GlUtils = _interopRequire(__webpack_require__(0));
-
-var fgShader = _interopRequire(__webpack_require__(7));
-
-var vcShader = _interopRequire(__webpack_require__(8));
-
-var CanvasShader = (function (_WebglEngine) {
-	function CanvasShader(parent, texture, fragment, vertex, params) {
-		_classCallCheck(this, CanvasShader);
-
-		_get(Object.getPrototypeOf(CanvasShader.prototype), "constructor", this).call(this, parent);
-		fragment = fragment.charAt(0).toUpperCase() + fragment.slice(1);
-		vertex = vertex.charAt(0).toUpperCase() + vertex.slice(1);
-		this.fragment = new fgShader[fragment](this.canvasInfo);
-		this.vertex = new vcShader[vertex](this.canvasInfo);
-		this.fragment.setParams && this.fragment.setParams(params.fragment);
-		this.vertex.setParams && this.vertex.setParams(params.vertex);
-		this.initClick(this.canvas);
-		this.initShaders();
-		var plane = this.createPlane(40);
-		plane.translation = [0, 0, -1];
-		plane.scale = [1 / this.frameInfo.screenRatio, 1, 1];
-		this.meshes = { plane: plane };
-		GlUtils.initMeshBuffers(this.ctx, this.meshes.plane);
-		this.initTexture(this.meshes.plane, texture);
-	}
-
-	_inherits(CanvasShader, _WebglEngine);
-
-	_createClass(CanvasShader, {
-		initShaders: {
-			value: function initShaders() {
-				GlUtils.initShaders(this, this.ctx, this.fragment, this.vertex);
-				this.fragment.init && this.fragment.init(this.ctx, this.shaderProgram);
-				this.vertex.init && this.vertex.init(this.ctx, this.shaderProgram);
-			}
-		},
-		draw: {
-			value: function draw() {
-				var _this = this;
-
-				this.drawObject(this.meshes.plane, function () {
-					_this.fragment.draw && _this.fragment.draw(_this.ctx, _this.shaderProgram);
-					_this.vertex.draw && _this.vertex.draw(_this.ctx, _this.shaderProgram);
-				});
-				this.transform();
-			}
-		},
-		transform: {
-			value: function transform() {
-				this.fragment.transform && this.fragment.transform();
-				this.vertex.transform && this.vertex.transform();
-			}
-		},
-		initClick: {
-			value: function initClick(target) {
-				target.addEventListener("click", this.handleClick.bind(this));
-				target.addEventListener("touchmove", this.handleTouchMove.bind(this));
-			}
-		},
-		handleClick: {
-			value: function handleClick(event) {
-				this.fragment.handleClick && this.fragment.handleClick(event);
-				this.vertex.handleClick && this.vertex.handleClick(event);
-			}
-		},
-		handleTouchMove: {
-			value: function handleTouchMove(event) {
-				this.fragment.handleTouchMove && this.fragment.handleTouchMove(event);
-				this.vertex.handleTouchMove && this.vertex.handleTouchMove(event);
-			}
-		}
-	});
-
-	return CanvasShader;
-})(WebglEngine);
-
-module.exports = CanvasShader;
-
-/***/ }),
+/* 2 */,
 /* 3 */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -558,7 +449,6 @@ var Shockwave = (function () {
 
 		this.canvasInfo = canvasInfo;
 		this.type = "fragment", this.source = "\n\t\t\t#define MAX_WAVE_NBR 10\n            precision highp float;\n\t\t\t\n\t\t\tvarying highp vec2 vTextureCoord;\n\t\t\tvarying highp vec3 vLighting;\n\t\t\tuniform sampler2D uSampler;\n\t\t\tuniform vec2 screenRatio;\n\t\t\t\n\t\t\tstruct waveStruct{\n\t\t\t\tvec2 center;\n\t\t\t\tfloat time;\n\t\t\t\tvec3 shockParams;\n\t\t\t};\n\t\t\tuniform waveStruct wave[MAX_WAVE_NBR];\n\n\t\t\tvoid main(void){\n\t\t\t\tvec2 uv = vTextureCoord.xy;\n\t\t\t\tvec2 texCoord = uv;\n\n\t\t\t\tfor (int count=0;count < MAX_WAVE_NBR;count++)\n\t\t\t\t{\n\t\t\t\t\tfloat distance = distance(uv, wave[count].center);\n\t\t\t\t\tif ((distance <= (wave[count].time + wave[count].shockParams.z)) && (distance >= (wave[count].time - wave[count].shockParams.z)))\n\t\t\t\t\t{\n\t\t\t\t\t\tfloat diff = (distance - wave[count].time); \n\t\t\t\t\t\tfloat powDiff = 1.0 - pow(abs(diff*wave[count].shockParams.x), wave[count].shockParams.y); \n\t\t\t\t\t\tfloat diffTime = diff * powDiff;\n\t\t\t\t\t\tvec2 diffUV = normalize(uv - wave[count].center); \n\t\t\t\t\t\ttexCoord = uv + (diffUV * diffTime);\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t\tvec4 fragmentColor = texture2D(uSampler, texCoord);\n\t\t\t\tif (fragmentColor.a <= 0.1) discard;\n\t\t\t\tgl_FragColor = vec4(fragmentColor.rgb * vLighting, fragmentColor.a);\n\t\t\t}\n\t\t";
-		// Amplitude?, Refraction?, Width?
 	}
 
 	_createClass(Shockwave, {
@@ -570,7 +460,7 @@ var Shockwave = (function () {
 				shaderParams.WAVE_LIFESPAN = 1.5;
 				shaderParams.lastTouchTime = -1;
 				var speed = params && params.speed || 0.02;
-				var shockParams = [params.x || 10.1, params.y || 0.8, params.z || 0.1];
+				var shockParams = [params.amplitude || 10.1, params.refraction || 0.8, params.width || 0.1];
 				shaderParams.waveParams = { shockParams: shockParams, speed: speed };
 				shaderParams.waveList = [];
 				for (var x = 0; x < shaderParams.WAVE_LIST_SIZE; x++) shaderParams.waveList.push({ time: 0, center: [-100, -100], on: false, shockParams: shaderParams.waveParams.shockParams, speed: shaderParams.waveParams.speed });
@@ -689,7 +579,7 @@ var Water = (function () {
 				shaderParams.WAVE_LIFESPAN = 1.5;
 				shaderParams.lastTouchTime = -1;
 				var speed = params && params.speed || 0.02;
-				var shockParams = [params.x || 10.1, params.y || 0.8, params.z || 0.1];
+				var shockParams = [params.amplitude || 10.1, params.refraction || 0.8, params.width || 0.1];
 				shaderParams.waveParams = { shockParams: shockParams, speed: speed };
 				shaderParams.waveList = [];
 				for (var x = 0; x < shaderParams.WAVE_LIST_SIZE; x++) shaderParams.waveList.push({ time: 0, center: [-100, -100], on: false, shockParams: shaderParams.waveParams.shockParams, speed: shaderParams.waveParams.speed });
@@ -908,9 +798,7 @@ var _classCallCheck = function (instance, Constructor) { if (!(instance instance
 
 var html2canvas = _interopRequire(__webpack_require__(13));
 
-//import DomToCanvas from './domToCanvas';
-
-var CanvasShader = _interopRequire(__webpack_require__(2));
+var ShaderHandler = _interopRequire(__webpack_require__(15));
 
 var Shapeshift = function Shapeshift(target, options) {
 	var _this = this;
@@ -928,7 +816,7 @@ var Shapeshift = function Shapeshift(target, options) {
 			useCORS: true,
 			onrendered: function (canvas) {
 				item.style.border = "none";
-				var shader = new CanvasShader(item, canvas.toDataURL("png"), options.fragment || "default", options.vertex || "default", options.params);
+				var shader = new ShaderHandler(item, canvas.toDataURL("png"), options.fragment || "default", options.vertex || "default", options.params);
 				_this.fragment = shader.fragment;
 				_this.vertex = shader.vertex;
 				_this.canvasInfo = shader.canvasInfo;
@@ -943,7 +831,119 @@ var Shapeshift = function Shapeshift(target, options) {
 module.exports = Shapeshift;
 
 /***/ }),
-/* 12 */
+/* 12 */,
+/* 13 */
+/***/ (function(module, exports) {
+
+module.exports = html2canvas;
+
+/***/ }),
+/* 14 */
+/***/ (function(module, exports, __webpack_require__) {
+
+module.exports = __webpack_require__(1);
+
+
+/***/ }),
+/* 15 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var _interopRequire = function (obj) { return obj && obj.__esModule ? obj["default"] : obj; };
+
+var _createClass = (function () { function defineProperties(target, props) { for (var key in props) { var prop = props[key]; prop.configurable = true; if (prop.value) prop.writable = true; } Object.defineProperties(target, props); } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
+
+var _get = function get(object, property, receiver) { var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc && desc.writable) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
+
+var _inherits = function (subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) subClass.__proto__ = superClass; };
+
+var _classCallCheck = function (instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } };
+
+var RenderEngine = _interopRequire(__webpack_require__(16));
+
+var GlUtils = _interopRequire(__webpack_require__(0));
+
+var fgShader = _interopRequire(__webpack_require__(7));
+
+var vcShader = _interopRequire(__webpack_require__(8));
+
+var ShaderHandler = (function (_RenderEngine) {
+	function ShaderHandler(parent, texture, fragment, vertex, params) {
+		_classCallCheck(this, ShaderHandler);
+
+		_get(Object.getPrototypeOf(ShaderHandler.prototype), "constructor", this).call(this, parent);
+		fragment = fragment.charAt(0).toUpperCase() + fragment.slice(1);
+		vertex = vertex.charAt(0).toUpperCase() + vertex.slice(1);
+		this.fragment = new fgShader[fragment](this.canvasInfo);
+		this.vertex = new vcShader[vertex](this.canvasInfo);
+		this.fragment.setParams && this.fragment.setParams(params.fragment);
+		this.vertex.setParams && this.vertex.setParams(params.vertex);
+		this.initClick(this.canvas);
+		this.initShaders();
+		var plane = this.createPlane(40);
+		plane.translation = [0, 0, -1];
+		plane.scale = [1 / this.frameInfo.screenRatio, 1, 1];
+		this.meshes = { plane: plane };
+		GlUtils.initMeshBuffers(this.ctx, this.meshes.plane);
+		this.initTexture(this.meshes.plane, texture);
+	}
+
+	_inherits(ShaderHandler, _RenderEngine);
+
+	_createClass(ShaderHandler, {
+		initShaders: {
+			value: function initShaders() {
+				GlUtils.initShaders(this, this.ctx, this.fragment, this.vertex);
+				this.fragment.init && this.fragment.init(this.ctx, this.shaderProgram);
+				this.vertex.init && this.vertex.init(this.ctx, this.shaderProgram);
+			}
+		},
+		draw: {
+			value: function draw() {
+				var _this = this;
+
+				this.drawObject(this.meshes.plane, function () {
+					_this.fragment.draw && _this.fragment.draw(_this.ctx, _this.shaderProgram);
+					_this.vertex.draw && _this.vertex.draw(_this.ctx, _this.shaderProgram);
+				});
+				this.transform();
+			}
+		},
+		transform: {
+			value: function transform() {
+				this.fragment.transform && this.fragment.transform();
+				this.vertex.transform && this.vertex.transform();
+			}
+		},
+		initClick: {
+			value: function initClick(target) {
+				target.addEventListener("click", this.handleClick.bind(this));
+				target.addEventListener("touchmove", this.handleTouchMove.bind(this));
+			}
+		},
+		handleClick: {
+			value: function handleClick(event) {
+				this.fragment.handleClick && this.fragment.handleClick(event);
+				this.vertex.handleClick && this.vertex.handleClick(event);
+			}
+		},
+		handleTouchMove: {
+			value: function handleTouchMove(event) {
+				this.fragment.handleTouchMove && this.fragment.handleTouchMove(event);
+				this.vertex.handleTouchMove && this.vertex.handleTouchMove(event);
+			}
+		}
+	});
+
+	return ShaderHandler;
+})(RenderEngine);
+
+module.exports = ShaderHandler;
+
+/***/ }),
+/* 16 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -957,14 +957,14 @@ var _classCallCheck = function (instance, Constructor) { if (!(instance instance
 
 var GlUtils = _interopRequire(__webpack_require__(0));
 
-var WebglEngine = (function () {
-	function WebglEngine(parent) {
-		_classCallCheck(this, WebglEngine);
+var RenderEngine = (function () {
+	function RenderEngine(parent) {
+		_classCallCheck(this, RenderEngine);
 
 		GlUtils.setupCanvas(this, parent);
 	}
 
-	_createClass(WebglEngine, {
+	_createClass(RenderEngine, {
 		checkFrameInterval: {
 			value: function checkFrameInterval() {
 				this.frameInfo.now = Date.now();
@@ -1009,7 +1009,6 @@ var WebglEngine = (function () {
 				ctx.vertexAttribPointer(this.shaderProgram.vertexNormalAttribute, mesh.normalBuffer.itemSize, ctx.FLOAT, false, 0, 0);
 				ctx.bindBuffer(ctx.ARRAY_BUFFER, mesh.textureBuffer);
 				ctx.vertexAttribPointer(this.shaderProgram.textureCoordAttribute, mesh.textureBuffer.itemSize, ctx.FLOAT, false, 0, 0);
-
 				ctx.activeTexture(ctx.TEXTURE0);
 				ctx.bindTexture(ctx.TEXTURE_2D, mesh.texture);
 				ctx.uniform1i(this.shaderProgram.samplerUniform, 0);
@@ -1018,7 +1017,6 @@ var WebglEngine = (function () {
 				ctx.bindBuffer(ctx.ELEMENT_ARRAY_BUFFER, mesh.indexBuffer);
 				GlUtils.setMatrixUniforms(ctx, this.shaderProgram, perspectiveMatrix);
 				ctx.drawElements(ctx.TRIANGLES, mesh.indexBuffer.numItems, ctx.UNSIGNED_SHORT, 0);
-				//		ctx.drawElements(ctx.LINE_STRIP, mesh.indexBuffer.numItems, ctx.UNSIGNED_SHORT, 0);
 				GlUtils.mvPopMatrix();
 			}
 		},
@@ -1045,7 +1043,7 @@ var WebglEngine = (function () {
 				var action = function () {
 					_this.handleLoadedTexture(object.texture);
 					_this.render();
-					_this.canvas.className = "canvas";
+					_this.canvas.className = "shapeshift-canvas";
 				};
 				if (object.texture.image.complete || object.texture.image.width + object.texture.image.height > 0) action();else object.texture.image.addEventListener("load", function (event) {
 					action();
@@ -1082,23 +1080,10 @@ var WebglEngine = (function () {
 		}
 	});
 
-	return WebglEngine;
+	return RenderEngine;
 })();
 
-module.exports = WebglEngine;
-
-/***/ }),
-/* 13 */
-/***/ (function(module, exports) {
-
-module.exports = html2canvas;
-
-/***/ }),
-/* 14 */
-/***/ (function(module, exports, __webpack_require__) {
-
-module.exports = __webpack_require__(1);
-
+module.exports = RenderEngine;
 
 /***/ })
 /******/ ]);

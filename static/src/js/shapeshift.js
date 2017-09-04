@@ -1,6 +1,5 @@
 import html2canvas from 'html2canvas';
-//import DomToCanvas from './domToCanvas';
-import CanvasShader from './canvas-shader';
+import ShaderHandler from './shader-handler';
 
 class Shapeshift{
 	constructor(target, options){
@@ -16,7 +15,7 @@ class Shapeshift{
 				useCORS:true,
 				onrendered: (canvas) => {
 					item.style.border = 'none';
-					var shader = new CanvasShader(item, canvas.toDataURL('png'), options.fragment || 'default', options.vertex || 'default', options.params);
+					var shader = new ShaderHandler(item, canvas.toDataURL('png'), options.fragment || 'default', options.vertex || 'default', options.params);
 					this.fragment = shader.fragment;
 					this.vertex = shader.vertex;
 					this.canvasInfo = shader.canvasInfo;

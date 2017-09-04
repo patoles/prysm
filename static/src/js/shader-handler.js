@@ -1,9 +1,9 @@
-import WebglEngine from './webgl-engine';
-import GlUtils from './gl-utils.js';
+import RenderEngine from './render-engine';
+import GlUtils from './gl-utils';
 import fgShader from './shaders/shader-fs';
 import vcShader from './shaders/shader-vs';
 
-class CanvasShader extends WebglEngine{
+class ShaderHandler extends RenderEngine{
 	constructor(parent, texture, fragment, vertex, params){
 		super(parent);
 		fragment = fragment.charAt(0).toUpperCase() + fragment.slice(1);
@@ -17,7 +17,7 @@ class CanvasShader extends WebglEngine{
 		var plane = this.createPlane(40);
 		plane.translation = [0,0,-1];
 		plane.scale = [1 / this.frameInfo.screenRatio,1,1];
-		this.meshes = {"plane":plane};
+		this.meshes = {plane};
 		GlUtils.initMeshBuffers(this.ctx, this.meshes.plane);
 		this.initTexture(this.meshes.plane, texture);
 	}
@@ -51,4 +51,4 @@ class CanvasShader extends WebglEngine{
 	}
 }
 
-export default CanvasShader;
+export default ShaderHandler;

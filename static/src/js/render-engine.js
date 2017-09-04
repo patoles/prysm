@@ -1,6 +1,6 @@
 import GlUtils from './gl-utils.js';
 
-class WebglEngine{
+class RenderEngine{
 	constructor(parent){
 		GlUtils.setupCanvas(this, parent);
 	}
@@ -41,7 +41,6 @@ class WebglEngine{
 		ctx.vertexAttribPointer(this.shaderProgram.vertexNormalAttribute, mesh.normalBuffer.itemSize, ctx.FLOAT, false, 0, 0);
 		ctx.bindBuffer(ctx.ARRAY_BUFFER, mesh.textureBuffer);
 		ctx.vertexAttribPointer(this.shaderProgram.textureCoordAttribute, mesh.textureBuffer.itemSize, ctx.FLOAT, false, 0, 0);
-
 		ctx.activeTexture(ctx.TEXTURE0);
 		ctx.bindTexture(ctx.TEXTURE_2D, mesh.texture);
 		ctx.uniform1i(this.shaderProgram.samplerUniform, 0);
@@ -50,7 +49,6 @@ class WebglEngine{
 		ctx.bindBuffer(ctx.ELEMENT_ARRAY_BUFFER, mesh.indexBuffer);
 		GlUtils.setMatrixUniforms(ctx, this.shaderProgram, perspectiveMatrix);
 		ctx.drawElements(ctx.TRIANGLES, mesh.indexBuffer.numItems, ctx.UNSIGNED_SHORT, 0);
-//		ctx.drawElements(ctx.LINE_STRIP, mesh.indexBuffer.numItems, ctx.UNSIGNED_SHORT, 0);
 		GlUtils.mvPopMatrix();
 	}
 	handleLoadedTexture(texture){
@@ -71,7 +69,7 @@ class WebglEngine{
 		var action = () => {
 			this.handleLoadedTexture(object.texture);
 			this.render();
-			this.canvas.className = 'canvas';
+			this.canvas.className = 'shapeshift-canvas';
 		};
 		if (object.texture.image.complete || object.texture.image.width+object.texture.image.height > 0)
 			action();
@@ -106,4 +104,4 @@ class WebglEngine{
 	}
 }
 
-export default WebglEngine;
+export default RenderEngine;
