@@ -1,9 +1,22 @@
 import GlUtils from './gl-utils.js';
 
+// RenderEngine class handle the render loop, draws the plane mesh and update the GLSL parameters.
 class RenderEngine{
 	constructor(parent){
-		// This will create and initialize the canvas and the webgl context.
+		// Creates and initializes the canvas and the webgl context.
 		GlUtils.setupCanvas(this, parent);
+		// Sets the engine parameters.
+		this.frameInfo = {
+			fpsInterval:0, startTime:Date.now(), now:0,
+			then:Date.now(), elapsed:0, fps:60, fpsRate:0, screenRatio:this.canvas.height / this.canvas.width
+		};
+		this.frameInfo.fpsInterval = 1000 / this.frameInfo.fps;
+		this.shaderProgram = null;
+		this.canvasInfo = {
+			width:this.realWidth, height:this.realHeight,
+			center:{x:this.realWidth / 2, y:this.realHeight / 2}
+		};
+		this.active = true;
 	}
 	// checkFrameInterval() checks if it's time for the next draw call.
 	checkFrameInterval(){
@@ -11,11 +24,11 @@ class RenderEngine{
 		this.frameInfo.elapsed = this.frameInfo.now - this.frameInfo.then;
 		return this.frameInfo.elapsed > this.frameInfo.fpsInterval;
 	}
-	// clearScreen() clear the canvas before each draw call.
+	// clearScreen() clears the canvas.
 	clearScreen(){
 		this.ctx.clearColor(0.0, 0.0, 0.0, 0.0);
 	}
-	// render() is the main loop of the engine. It will make a draw call every X milliseconds.
+	// render() is the main loop of the engine. It will make a draw call every X milliseconds depending on the engine's defined FPS.
 	render(){
 		if (this.active)
 		{
@@ -28,9 +41,9 @@ class RenderEngine{
 			}
 		}
 	}
-	// draw() is called in each render loop. It needs to be overloaded in the child class.
+	// draw() is called in each render loop. It can be overloaded in the child class.
 	draw(){}
-	// drawObject(mesh, drawShaders) define the perspective, transform (translate, rotate, scale) and draw the mesh, and call the shaders's draw() methods.
+	// drawObject(mesh, drawShaders) defines the perspective, transforms (translate, rotate, scale) and draws the mesh, and calls the shaders's draw() methods.
 	drawObject(mesh, drawShaders){
 		var ctx = this.ctx;
 		ctx.clear(ctx.COLOR_BUFFER_BIT | ctx.DEPTH_BUFFER_BIT);
@@ -68,7 +81,7 @@ class RenderEngine{
 		ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_T, ctx.CLAMP_TO_EDGE);
 		ctx.bindTexture(ctx.TEXTURE_2D, null);
 	}
-	// initTexture(object, url) load and create the webgl texture.
+	// initTexture(object, url) loads and creates the webgl texture.
 	initTexture(object, url){
 		object.texture = this.ctx.createTexture();
 		object.texture.image = new Image();
@@ -77,7 +90,6 @@ class RenderEngine{
 		var action = () => {
 			this.handleLoadedTexture(object.texture);
 			this.render();
-			this.canvas.className = 'shapeshift-canvas';
 		};
 		if (object.texture.image.complete || object.texture.image.width+object.texture.image.height > 0)
 			action();
