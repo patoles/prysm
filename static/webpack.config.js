@@ -15,6 +15,9 @@ module.exports = {
 			{test:/\.js$/, loader: 'babel-loader', exclude:/node_modules/}
 		]
 	},
+	externals: {
+		'html2canvas': 'html2canvas'
+	},
 	resolve: {
 		extensions: [".tsx", ".ts", ".js", ".jsx"]
 	},
@@ -24,6 +27,7 @@ module.exports = {
 			template: "html/index.html",
 			filename: "../../index.html",
 			ts:Date.now()
-		})
+		}),
+		new webpack.optimize.UglifyJsPlugin({compress: true})
 	]
 };

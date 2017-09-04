@@ -1,8 +1,8 @@
 {
-  "name": "canvas-shader",
-  "version": "0.0.0",
+  "name": "shapeshift",
+  "version": "0.1.0",
   "description": "",
-  "author": "Simon",
+  "author": "Simon Patole",
   "license": "",
   "main": "src/js/main.js",
   "scripts": {
@@ -10,12 +10,7 @@
     "dev": "webpack-dev-server --env.production",
     "watch": "NODE_ENV=dev webpack --progress --colors --watch --env.production"
   },
-  "dependencies": {
-    "fs": "0.0.1-security",
-    "html2canvas": "^0.5.0-beta4",
-    "sylvester": "0.0.21",
-    "webgl-obj-loader": "^0.1.1"
-  },
+  "dependencies": {},
   "devDependencies": {
     "babel-core": "^4.7.16",
     "babel-loader": "^4.2.0",
