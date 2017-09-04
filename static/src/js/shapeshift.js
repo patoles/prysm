@@ -1,6 +1,8 @@
 import html2canvas from 'html2canvas';
 import ShaderHandler from './shader-handler';
 
+// Shapeshift class transforms a DOM Element 'target' to an Image which will then be used as a texture.
+// It also sets the fragment and vertex shaders and their parameters.
 class Shapeshift{
 	constructor(target, options){
 		options = options || {};

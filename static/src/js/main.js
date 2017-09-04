@@ -1,7 +1,7 @@
 import Shapeshift from './shapeshift';
 
-var item = document.getElementById('test');
-var shape = new Shapeshift(item, {
+var target = document.getElementById('test');
+var shape = new Shapeshift(target, {
     fragment:"water",
     vertex:"water",
     params:{
