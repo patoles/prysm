@@ -1,9 +1,6 @@
-# Shapeshift (Work in progress)
+# Prysm (Work in progress)
 
 Use GLSL shaders on your DOM containers easily.
-
-<a name="gettingstarted"></a>
-## Getting started
 
 ### Usage
 ```Javascript
