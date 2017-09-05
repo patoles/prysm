@@ -1,7 +1,7 @@
 import Prysm from 'prysm';
 
 var target = document.getElementById('test');
-var shape = new Prysm(target, {
+new Prysm(target, {
     fragment:"water",
     vertex:"water",
     params:{
