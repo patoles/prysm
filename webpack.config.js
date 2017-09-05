@@ -29,7 +29,7 @@ module.exports = {
 		new HtmlWebpackPlugin({
 			inject: false,
 			template: "html/index.html",
-			filename: "../../index.html",
+			filename: "../index.html",
 			ts:Date.now()
 		}),
 		new UglifyJsPlugin({
