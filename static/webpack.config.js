@@ -1,14 +1,18 @@
 var path = require('path');
 var HtmlWebpackPlugin = require('html-webpack-plugin');
 var webpack = require('webpack');
+var UglifyJsPlugin = webpack.optimize.UglifyJsPlugin;
 
 module.exports = {
 	entry: {
-		app: ['./src/js/main.js']
+		prysm: ['./src/js/prysm.js'],
+		index: ['./src/js/index.js'],
 	},
 	output: {
 		path: path.resolve(__dirname, 'dist'),
-		filename: process.env.NODE_ENV === 'dev' ? '[name].js' : '[name].[hash].js'
+		filename: '[name].min.js',
+		library:'prysm',
+		libraryTarget:'umd'
 	},
 	module:{
 		loaders:[
@@ -16,10 +20,10 @@ module.exports = {
 		]
 	},
 	externals: {
-		'html2canvas': 'html2canvas'
+		'prysm': 'prysm'
 	},
 	resolve: {
-		extensions: [".tsx", ".ts", ".js", ".jsx"]
+		extensions: [".js"]
 	},
 	plugins:[
 		new HtmlWebpackPlugin({
@@ -28,6 +32,8 @@ module.exports = {
 			filename: "../../index.html",
 			ts:Date.now()
 		}),
-		new webpack.optimize.UglifyJsPlugin({compress: true})
+		new UglifyJsPlugin({
+			compress: true
+		})
 	]
 };

@@ -88,7 +88,6 @@ export default class Shockwave{
 		});
 	}
     handleClick(event){
-		var shaderParams = this.shaderParams;
 		var posX = event.clientX - event.target.getBoundingClientRect().left;
 		var posY = event.clientY - event.target.getBoundingClientRect().top;
 		this.setWavePos({x:posX, y:posY});

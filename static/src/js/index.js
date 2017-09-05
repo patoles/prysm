@@ -1,4 +1,4 @@
-import Prysm from './prysm';
+import Prysm from 'prysm';
 
 var target = document.getElementById('test');
 var shape = new Prysm(target, {
