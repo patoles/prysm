@@ -1,7 +1,7 @@
-import Shapeshift from './shapeshift';
+import Prysm from 'prysm';
 
 var target = document.getElementById('test');
-var shape = new Shapeshift(target, {
+new Prysm(target, {
     fragment:"water",
     vertex:"water",
     params:{
