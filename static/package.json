@@ -1,10 +1,10 @@
 {
-  "name": "shapeshift",
-  "version": "0.1.0",
-  "description": "",
+  "name": "prysm",
+  "version": "0.1.2",
+  "description": "Use GLSL shaders on your DOM containers easily.",
   "author": "Simon Patole",
-  "license": "",
-  "main": "src/js/main.js",
+  "license": "MIT",
+  "main": "dist/prysm.min.js",
   "scripts": {
     "build": "webpack --env.production --bail --progress",
     "dev": "webpack-dev-server --env.production",

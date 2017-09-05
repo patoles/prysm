@@ -7,7 +7,7 @@ Use GLSL shaders on your DOM containers easily.
 
 ### Usage
 ```Javascript
-import Shapeshift from './shapeshift';
+import Prysm from 'prysm';
 
 var target = document.getElementById('test');
 var options = {
@@ -22,7 +22,7 @@ var options = {
     }
 };
 
-new Shapeshift(target, options);
+new Prysm(target, options);
 ```
 
 #### Options
