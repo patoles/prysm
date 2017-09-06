@@ -1,10 +1,20 @@
 {
   "name": "prysm",
-  "version": "0.1.2",
+  "version": "0.1.5",
   "description": "Use GLSL shaders on your DOM containers easily.",
-  "author": "Simon Patole",
+  "author": {
+    "name": "Simon Patole",
+    "email": "patolesimon@gmail.com"
+  },
   "license": "MIT",
   "main": "dist/prysm.min.js",
+  "bugs": {
+    "url": "https://github.com/patoles/prysm.git/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/patoles/prysm.git"
+  },
   "scripts": {
     "build": "webpack --env.production --bail --progress",
     "dev": "webpack-dev-server --env.production",
