@@ -1,6 +1,6 @@
 {
   "name": "prysm",
-  "version": "0.1.5",
+  "version": "0.1.7",
   "description": "Use GLSL shaders on your DOM containers easily.",
   "author": {
     "name": "Simon Patole",
@@ -11,6 +11,7 @@
   "bugs": {
     "url": "https://github.com/patoles/prysm.git/issues"
   },
+  "homepage": "https://codepen.io/patoles/pen/NvmJyN",
   "repository": {
     "type": "git",
     "url": "https://github.com/patoles/prysm.git"
