@@ -1,7 +1,7 @@
 {
   "name": "prysm",
-  "version": "0.1.9",
-  "description": "Use GLSL shaders on your DOM containers easily.",
+  "version": "0.1.12",
+  "description": "Use shaders on your DOM elements easily.",
   "author": {
     "name": "Simon Patole",
     "email": "patolesimon@gmail.com"

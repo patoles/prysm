@@ -1,6 +1,6 @@
 # Prysm (Work in progress)
 
-Use GLSL shaders on your DOM containers easily.
+Use shaders on your DOM elements easily.
 [Demo1](https://codepen.io/patoles/pen/NvmJyN)
 [Demo2](https://codepen.io/patoles/pen/mMgZMY)
 
