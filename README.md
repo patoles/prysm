@@ -1,7 +1,8 @@
 # Prysm (Work in progress)
 
 Use GLSL shaders on your DOM containers easily.
-[Example](https://codepen.io/patoles/pen/NvmJyN)
+[Demo1](https://codepen.io/patoles/pen/NvmJyN)
+[Demo2](https://codepen.io/patoles/pen/mMgZMY)
 
 ![example-pic](http://res.cloudinary.com/dxlvclh9c/image/upload/c_scale,w_180/v1504679545/water_gif_ejbkqx.gif)
 
