@@ -3,6 +3,8 @@
 Use GLSL shaders on your DOM containers easily.
 [Example](https://codepen.io/patoles/pen/NvmJyN)
 
+![example-pic](http://res.cloudinary.com/dxlvclh9c/image/upload/c_scale,w_180/v1504679545/water_gif_ejbkqx.gif)
+
 ### Usage
 ```Javascript
 import Prysm from 'prysm';
