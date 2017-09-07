@@ -6,6 +6,18 @@ Use shaders on your DOM elements easily.
 
 ![example-pic](http://res.cloudinary.com/dxlvclh9c/image/upload/c_scale,w_180/v1504679545/water_gif_ejbkqx.gif)
 
+## Table of Contents
+1. [Installation](#install)
+2. [Usage](#usage)
+3. [Examples](#examples)
+
+<a name="install"></a>
+### Installation
+
+```cmd
+npm install prysm
+```
+<a name="usage"></a>
 ### Usage
 ```Javascript
 import Prysm from 'prysm';
@@ -53,3 +65,10 @@ new Prysm(target, options);
 | --- | --- | --- |
 | amplitude | float | 0.05 |
 | frequency | float | 1.0 | 
+
+<a name="examples"></a>
+### Examples
+
+[Water fragment/vertex shader](https://codepen.io/patoles/pen/NvmJyN)
+
+[Shockwave fragment shader](https://codepen.io/patoles/pen/mMgZMY)
