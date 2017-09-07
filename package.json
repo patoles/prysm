@@ -1,6 +1,6 @@
 {
   "name": "prysm",
-  "version": "0.1.12",
+  "version": "0.1.13",
   "description": "Use shaders on your DOM elements easily.",
   "author": {
     "name": "Simon Patole",
