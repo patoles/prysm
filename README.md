@@ -1,4 +1,4 @@
-# Prysm (Work in progress)
+# Prysm
 
 Apply WebGL shaders on DOM elements easily.
 [Demo1](https://codepen.io/patoles/pen/NvmJyN)
