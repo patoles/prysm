@@ -1,6 +1,6 @@
 # Prysm (Work in progress)
 
-Use shaders on your DOM elements easily.
+Apply WebGL shaders on DOM elements easily.
 [Demo1](https://codepen.io/patoles/pen/NvmJyN)
 [Demo2](https://codepen.io/patoles/pen/mMgZMY)
 
