@@ -1,6 +1,6 @@
 {
   "name": "prysm",
-  "version": "0.1.15",
+  "version": "0.1.16",
   "description": "Apply WebGL shaders on DOM elements easily.",
   "author": {
     "name": "Simon Patole",

@@ -3,6 +3,7 @@
 Apply WebGL shaders on DOM elements easily.
 [Demo1](https://codepen.io/patoles/pen/NvmJyN)
 [Demo2](https://codepen.io/patoles/pen/mMgZMY)
+[Demo3](https://codepen.io/patoles/pen/gxJQpQ)
 
 ![example-pic](http://res.cloudinary.com/dxlvclh9c/image/upload/c_scale,w_180/v1504679545/water_gif_ejbkqx.gif)
 
@@ -72,3 +73,5 @@ new Prysm(target, options);
 [Water fragment/vertex shader](https://codepen.io/patoles/pen/NvmJyN)
 
 [Shockwave fragment shader](https://codepen.io/patoles/pen/mMgZMY)
+
+[Speaker sound wave](https://codepen.io/patoles/pen/gxJQpQ)
